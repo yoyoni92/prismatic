@@ -1,0 +1,15 @@
+[project]
+name = "prismatic-parser"
+version = "0.1.0"
+description = "Document parser for the prismatic system"
+requires-python = ">=3.10,<3.14"
+
+dependencies = [
+    "pymupdf==1.24.3",
+    "python-docx==1.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.2.0",
+]
