@@ -16,6 +16,7 @@ services:
       - N8N_PROTOCOL=http
     volumes:
       - n8n_data:/home/node/.n8n
+      - ./code/workflow:/home/node/.n8n/workflows
       - ./code/parser:/home/node/parser
     networks:
       - prismatic
