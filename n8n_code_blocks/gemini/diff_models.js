@@ -12,4 +12,19 @@ const diff = {
   pro_summary:          pro.summary ?? null,
 };
 
-return [{ json: { gemini_flash: flash, gemini_pro: pro, flash_vs_pro_diff: diff } }];
+const scenario = $('Extract Scenario').first().json;
+const file     = $('Download file').first().json;
+
+return [{
+  json: {
+    drive_file_id:      file.id,
+    filename:           file.name,
+    file_extension:     file.fileExtension,
+    mime_type:          file.mimeType,
+    detected_scenario:  scenario.detected_scenario,
+    scenario_reasoning: scenario.scenario_reasoning,
+    gemini_flash:       flash,
+    gemini_pro:         pro,
+    flash_vs_pro_diff:  diff,
+  }
+}];

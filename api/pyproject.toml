@@ -1,0 +1,36 @@
+[project]
+name = "prismatic-api"
+version = "0.1.0"
+description = "Prismatic enrichment microservice"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.0",
+    "openai (>=2.38.0,<3.0.0)",
+]
+
+[tool.poetry]
+name = "prismatic-api"
+version = "0.1.0"
+description = "Prismatic enrichment microservice"
+authors = ["Yehonatan Dahan <yoyoni1992@gmail.com>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.12"
+fastapi = ">=0.110"
+uvicorn = {extras = ["standard"], version = ">=0.27"}
+pydantic = ">=2.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+httpx = "^0.27"
+
+[tool.pytest.ini_options]
+pythonpath = [".."]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

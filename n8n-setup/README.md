@@ -10,12 +10,17 @@ n8n's default Docker image is a hardened Alpine image with no package manager �
 ┌─────────────────────┐        WebSocket        ┌──────────────────────┐
 │   n8n (port 5678)   │ ◄────── port 5679 ──────► │  runners container   │
 │                     │                           │                      │
-│  Workflow engine    │                           │  Python runner       │
-│  UI & API           │                           │  JS runner           │
-└─────────────────────┘                           │  pdfplumber          │
-                                                  │  python-docx         │
-                                                  │  google-genai        │
-                                                  └──────────────────────┘
+│  Workflow engine    │   HTTP (prismatic net)    │  Python runner       │
+│  UI & API           │ ──────────────────────►   │  JS runner           │
+└─────────────────────┘   api:8000               └──────────────────────┘
+        │                      │
+        │              ┌───────┴──────────────┐
+        │              │  api container       │
+        │              │  FastAPI port 8000   │
+        │              │  /enrich             │
+        │              │  /sensitivity        │
+        │              │  (OpenAI verifier)   │
+        └──────────────┘──────────────────────┘
 ```
 
 The `n8nio/runners` base image ships with Python 3.13 and `uv` pre-configured, with a venv already set up at `/opt/runners/task-runner-python/.venv/`. Python packages are installed into that venv at build time.
@@ -60,7 +65,7 @@ Add any Python packages you need available in n8n Python code nodes here.
 2. Build and start:
 
    ```bash
-   docker compose --env-file ../.env up -d n8n runners
+   docker compose --env-file ../.env up -d
    ```
 
    Or use the provided shortcuts:
@@ -87,3 +92,4 @@ docker compose --env-file ../.env up -d runners
 | `N8N_RUNNERS_AUTH_TOKEN` | both | Shared secret for the WebSocket handshake |
 | `N8N_RUNNERS_TASK_BROKER_URI` | runners | Points to `http://n8n:5679` |
 | `GEMINI_API_KEY` | both | Passed to n8n for workflow credentials, and to runners for Python code nodes |
+| `OPENAI_API_KEY` | api | OpenAI key for LLM sensitivity verification (optional) |

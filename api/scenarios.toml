@@ -1,0 +1,98 @@
+[scenarios.business]
+sensitive_keywords = ["confidential", "proprietary", "nda", "secret"]
+
+[scenarios.business.department_map]
+invoice = "Finance"
+contract = "Legal"
+report = "Management"
+ticket = "Operations"
+article = "Communications"
+other = "General"
+
+[scenarios.cybersecurity]
+sensitive_keywords = ["breach", "exploit", "vulnerability", "zero-day", "critical"]
+
+[scenarios.cybersecurity.department_map]
+invoice = "Finance"
+contract = "Legal"
+report = "Security Operations"
+ticket = "Incident Response"
+article = "Threat Intelligence"
+other = "Security Operations"
+
+[scenarios.financial]
+sensitive_keywords = ["earnings", "forecast", "unreleased", "material non-public"]
+
+[scenarios.financial.department_map]
+invoice = "Accounts Payable"
+contract = "Legal"
+report = "Finance"
+ticket = "Finance"
+article = "Finance"
+other = "Finance"
+
+[scenarios.hr]
+sensitive_keywords = ["salary", "termination", "complaint", "personal", "medical"]
+
+[scenarios.hr.department_map]
+invoice = "Finance"
+contract = "HR"
+report = "HR"
+ticket = "HR"
+article = "HR"
+other = "HR"
+
+[scenarios.product]
+sensitive_keywords = ["unreleased", "roadmap", "prototype", "embargo"]
+
+[scenarios.product.department_map]
+invoice = "Finance"
+contract = "Legal"
+report = "Product"
+ticket = "Product"
+article = "Marketing"
+other = "Product"
+
+[scenarios.academic]
+sensitive_keywords = ["unpublished", "pre-print", "embargo", "confidential"]
+
+[scenarios.academic.department_map]
+invoice = "Finance"
+contract = "Legal"
+report = "Research"
+ticket = "Administration"
+article = "Research"
+other = "Research"
+
+[scenarios.legal]
+sensitive_keywords = ["privilege", "confidential", "attorney", "sealed", "nda"]
+
+[scenarios.legal.department_map]
+invoice = "Finance"
+contract = "Legal"
+report = "Legal"
+ticket = "Legal"
+article = "Legal"
+other = "Legal"
+
+[scenarios.medical]
+sensitive_keywords = ["patient", "diagnosis", "hipaa", "phi", "treatment"]
+
+[scenarios.medical.department_map]
+invoice = "Billing"
+contract = "Legal"
+report = "Clinical"
+ticket = "Clinical"
+article = "Research"
+other = "Clinical"
+
+[scenarios.other]
+sensitive_keywords = ["confidential", "restricted", "private", "internal only"]
+
+[scenarios.other.department_map]
+invoice = "Finance"
+contract = "Legal"
+report = "General"
+ticket = "Operations"
+article = "Communications"
+other = "General"
