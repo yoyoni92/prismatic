@@ -1,0 +1,64 @@
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+      - "5679:5679"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=changeme
+      - GENERIC_TIMEZONE=Asia/Jerusalem
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - N8N_RUNNERS_MODE=external
+      - N8N_RUNNERS_EXTERNAL_ALLOW=*
+      - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}
+      - N8N_RUNNERS_BROKER_LISTEN_ADDRESS=0.0.0.0
+      - N8N_DEFAULT_BINARY_DATA_MODE=default
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_EXPRESSIONS_ALLOWED_ENV_VARS=GEMINI_API_KEY
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ../code/workflow:/home/node/.n8n/workflows
+      - ../n8n_code_blocks/parser:/home/node/parser
+    networks:
+      - prismatic
+
+  runners:
+    build:
+      context: ./runners
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679
+      - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./config/n8n-task-runners.json:/etc/n8n-task-runners.json
+    networks:
+      - prismatic
+    depends_on:
+      - n8n
+
+  api:
+    build:
+      context: ../code/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - prismatic
+
+networks:
+  prismatic:
+    driver: bridge
+
+volumes:
+  n8n_data:
