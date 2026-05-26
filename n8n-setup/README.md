@@ -1,4 +1,10 @@
-# n8n Setup
+<div align="center">
+  <img src="../dashboard/prismatic-logo.png" alt="Prismatic" width="180" />
+  <h1>n8n Setup</h1>
+  <p>Self-hosted n8n with Python support, using the external runners architecture.</p>
+</div>
+
+---
 
 Self-hosted n8n with Python support, using the external runners architecture.
 
@@ -17,10 +23,19 @@ n8n's default Docker image is a hardened Alpine image with no package manager �
         │              ┌───────┴──────────────┐
         │              │  api container       │
         │              │  FastAPI port 8000   │
-        │              │  /enrich             │
+        │              │  /health             │
+        │              │  /categories         │
+        │              │  /results  ←─────────┼─── fetches Google Sheets
+        │              │  /enrich             │    server-side (cached 60s)
         │              │  /sensitivity        │
         │              │  (OpenAI verifier)   │
         └──────────────┘──────────────────────┘
+                │
+        ┌───────┴──────────────┐
+        │  dashboard (port 3000)│
+        │  nginx               │
+        │  /proxy/* → api/n8n  │  no credentials in browser
+        └──────────────────────┘
 ```
 
 The `n8nio/runners` base image ships with Python 3.13 and `uv` pre-configured, with a venv already set up at `/opt/runners/task-runner-python/.venv/`. Python packages are installed into that venv at build time.
@@ -91,5 +106,19 @@ docker compose --env-file ../.env up -d runners
 | `N8N_RUNNERS_BROKER_LISTEN_ADDRESS` | n8n | Set to `0.0.0.0` so runners can connect over Docker network |
 | `N8N_RUNNERS_AUTH_TOKEN` | both | Shared secret for the WebSocket handshake |
 | `N8N_RUNNERS_TASK_BROKER_URI` | runners | Points to `http://n8n:5679` |
-| `GEMINI_API_KEY` | both | Passed to n8n for workflow credentials, and to runners for Python code nodes |
+| `GEMINI_API_KEY` | n8n, runners | Passed to n8n for workflow credentials, and to runners for Python code nodes |
 | `OPENAI_API_KEY` | api | OpenAI key for LLM sensitivity verification (optional) |
+| `GOOGLE_SHEET_ID` | api | Google Sheets spreadsheet ID — fetched server-side by `/results` |
+| `GOOGLE_SHEETS_API_KEY` | api | Restricted Sheets API key — never exposed to the browser |
+
+## Dashboard proxy routes
+
+The dashboard nginx proxies all backend calls so no credentials or internal hostnames are exposed to the browser:
+
+| Browser path | Forwards to |
+|---|---|
+| `GET /proxy/results` | `api:8000/results` — Google Sheets data (60s cache) |
+| `GET /proxy/api-health` | `api:8000/health` |
+| `GET /proxy/api-categories` | `api:8000/categories` |
+| `GET /proxy/n8n-health` | `n8n:5678/healthz` |
+| `POST /proxy/chat` | `n8n:5678/webhook/prismatic-rag-chat` |

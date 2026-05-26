@@ -1,4 +1,7 @@
-# Prismatic
+<div align="center">
+  <img src="dashboard/prismatic-logo.png" alt="Prismatic" width="180" />
+  <h1>Prismatic</h1>
+</div>
 
 An n8n-based document intelligence pipeline. Uploads from Google Drive are parsed, domain-classified, and analyzed by Gemini — producing structured JSON with summary, entities, sentiment, and action items.
 
@@ -88,6 +91,12 @@ The Python code runs inside a dedicated **runners container** (not the main n8n 
 
 ```
 prismatic/
+├── dashboard/                     # Live intelligence dashboard (nginx, served on port 3000)
+│   ├── index.html
+│   ├── prismatic-logo.png
+│   ├── nginx.conf
+│   └── Dockerfile
+│
 ├── n8n-setup/              # Docker setup for n8n + Python runners
 │   ├── config/
 │   │   └── n8n-task-runners.json
@@ -149,8 +158,14 @@ Edit `.env` and fill in:
 |---|---|
 | `GEMINI_API_KEY` | Google Gemini API key |
 | `N8N_RUNNERS_AUTH_TOKEN` | Random secret shared between n8n and the runners container |
+| `N8N_BASIC_AUTH_USER` | n8n UI login username |
 | `N8N_BASIC_AUTH_PASSWORD` | n8n UI login password |
+| `GENERIC_TIMEZONE` | Timezone for n8n scheduler (e.g. `Asia/Jerusalem`) |
 | `OPENAI_API_KEY` | OpenAI API key for sensitivity LLM verification (optional — falls back to rule-based if unset) |
+| `NOTIFY_EMAIL` | Comma-separated recipient list for Gmail notification workflows |
+| `GOOGLE_SHEET_ID` | Google Sheet ID used by the API and dashboard |
+| `GOOGLE_SHEETS_API_KEY` | Restricted API key with Sheets read access (for dashboard) |
+| `DASHBOARD_WEBHOOK_URL` | n8n RAG chat webhook URL consumed by the dashboard |
 
 Generate a secure token:
 ```bash

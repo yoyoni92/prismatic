@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir fastapi "uvicorn[standard]" pydantic openai
+RUN pip install --no-cache-dir fastapi "uvicorn[standard]" pydantic openai httpx
 
 # Copy api source into /app/api/ so it's importable as the `api` package
 COPY . /app/api/

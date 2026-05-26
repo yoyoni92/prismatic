@@ -7,9 +7,9 @@ services:
       - "5679:5679"
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=changeme
-      - GENERIC_TIMEZONE=Asia/Jerusalem
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
       - N8N_HOST=localhost
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
@@ -57,6 +57,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_SHEET_ID=${GOOGLE_SHEET_ID}
+      - GOOGLE_SHEETS_API_KEY=${GOOGLE_SHEETS_API_KEY}
     networks:
       - prismatic
     healthcheck:
@@ -65,6 +67,19 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  dashboard:
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment: []
+    volumes:
+      - ../dashboard/index.html:/usr/share/nginx/html/index.html:ro
+    networks:
+      - prismatic
 
 networks:
   prismatic:

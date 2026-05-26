@@ -60,6 +60,31 @@ class CategoriesResponse(BaseModel):
     categories: list[str] = Field(default_factory=list)
 
 
+class SheetRow(BaseModel):
+    model_config = {"frozen": True}
+
+    document_id: str = ""
+    drive_file_id: str = ""
+    model: str = ""
+    filename: str = ""
+    file_type: str = ""
+    processed_at: str = ""
+    classification: str = ""
+    department: str = ""
+    sentiment: str = ""
+    confidence_score: float = 0.0
+    sensitivity: str = ""
+    routing_tag: str = ""
+    summary: str = ""
+    action_items: str = ""
+
+
+class ResultsResponse(BaseModel):
+    model_config = {"frozen": True}
+
+    rows: list[SheetRow] = Field(default_factory=list)
+
+
 class ProcessRequest(BaseModel):
     scenario: str
     data: GeminiResult
