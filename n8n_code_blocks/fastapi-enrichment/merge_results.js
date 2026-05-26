@@ -1,29 +1,43 @@
-const general_data    = $('Final Result With Models Diff').first().json
+const general_data = $('Final Result With Models Diff').first().json;
+const enrich       = $input.first().json;
+const sens         = $input.last().json;
 
+const flash = general_data.gemini_flash;
+const pro   = general_data.gemini_pro;
 
-return [{
-  json: {
-    drive_file_id:                general_data.drive_file_id,
-    filename:                     general_data.filename,
-    file_extension:               general_data.file_extension,
-    mime_type:                    general_data.mime_type,
+const shared = {
+  document_id:       enrich.document_id,
+  drive_file_id:     general_data.drive_file_id,
+  filename:          general_data.filename,
+  file_type:         general_data.file_extension,
+  processed_at:      enrich.processed_at,
+  department:        enrich.department,
+  sensitivity:       sens.sensitivity,
+  routing_tag:       enrich.routing_tag,
+  flash_vs_pro_diff: JSON.stringify(general_data.flash_vs_pro_diff),
+};
 
-    detected_scenario:            general_data.detected_scenario,
-    scenario_reasoning:           general_data.scenario_reasoning,
-
-    ...general_data.gemini_flash,
-    gemini_pro:                   general_data.gemini_pro,
-    flash_vs_pro_diff:            general_data.flash_vs_pro_diff,
-
-    document_id:                  $input.first().json.document_id,
-    department:                   $input.first().json.department,
-    routing_tag:                  $input.first().json.routing_tag,
-    confidence_adjusted:          $input.first().json.confidence_adjusted,
-    keyword_tags:                 $input.first().json.keyword_tags,
-    processed_at:                 $('Set Gemini Api Key').first().json.processed_at,
-
-    sensitivity:                  $input.last().json.sensitivity,
-    sensitivity_reason:           $input.last().json.reason,
-    verified_llm_on_sensitivity:  $input.last().json.llm_verified
+return [
+  {
+    json: {
+      ...shared,
+      model:            $('Set Gemini Api Key').first().json.gemini_flash_model,
+      classification:   flash.classification,
+      sentiment:        flash.sentiment,
+      confidence_score: flash.confidence_score,
+      summary:          flash.summary.slice(0, 500),
+      action_items:     flash.action_items.join(', '),
+    }
+  },
+  {
+    json: {
+      ...shared,
+      model:            $('Set Gemini Api Key').first().json.gemini_pro_model,
+      classification:   pro.classification,
+      sentiment:        pro.sentiment,
+      confidence_score: pro.confidence_score,
+      summary:          pro.summary.slice(0, 500),
+      action_items:     (pro.action_items ?? []).join(', '),
+    }
   }
-}];
+];

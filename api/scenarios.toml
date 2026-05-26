@@ -1,5 +1,5 @@
 [scenarios.business]
-sensitive_keywords = ["confidential", "proprietary", "nda", "secret"]
+sensitive_keywords = ["confidential", "proprietary", "nda", "secret", "restricted", "trade secret", "internal only", "do not distribute", "need to know", "for internal use only"]
 
 [scenarios.business.department_map]
 invoice = "Finance"
@@ -10,7 +10,7 @@ article = "Communications"
 other = "General"
 
 [scenarios.cybersecurity]
-sensitive_keywords = ["breach", "exploit", "vulnerability", "zero-day", "critical"]
+sensitive_keywords = ["breach", "exploit", "vulnerability", "zero-day", "critical", "ransomware", "malware", "incident", "compromise", "threat actor", "cve", "exfiltration", "backdoor", "payload", "ioc"]
 
 [scenarios.cybersecurity.department_map]
 invoice = "Finance"
@@ -21,7 +21,7 @@ article = "Threat Intelligence"
 other = "Security Operations"
 
 [scenarios.financial]
-sensitive_keywords = ["earnings", "forecast", "unreleased", "material non-public"]
+sensitive_keywords = ["earnings", "forecast", "unreleased", "material non-public", "mnpi", "acquisition", "merger", "insider", "guidance", "restatement", "non-public", "pending announcement", "write-down"]
 
 [scenarios.financial.department_map]
 invoice = "Accounts Payable"
@@ -32,7 +32,7 @@ article = "Finance"
 other = "Finance"
 
 [scenarios.hr]
-sensitive_keywords = ["salary", "termination", "complaint", "personal", "medical"]
+sensitive_keywords = ["salary", "termination", "complaint", "personal", "medical", "disciplinary", "grievance", "performance review", "severance", "background check", "harassment", "biometric", "redundancy", "pii"]
 
 [scenarios.hr.department_map]
 invoice = "Finance"
@@ -43,7 +43,7 @@ article = "HR"
 other = "HR"
 
 [scenarios.product]
-sensitive_keywords = ["unreleased", "roadmap", "prototype", "embargo"]
+sensitive_keywords = ["unreleased", "roadmap", "prototype", "embargo", "trade secret", "alpha", "beta", "pre-launch", "patent pending", "under development", "competitive", "ip"]
 
 [scenarios.product.department_map]
 invoice = "Finance"
@@ -54,7 +54,7 @@ article = "Marketing"
 other = "Product"
 
 [scenarios.academic]
-sensitive_keywords = ["unpublished", "pre-print", "embargo", "confidential"]
+sensitive_keywords = ["unpublished", "pre-print", "embargo", "confidential", "irb", "human subjects", "participant data", "preliminary", "under review", "not for citation", "in press", "draft"]
 
 [scenarios.academic.department_map]
 invoice = "Finance"
@@ -65,7 +65,7 @@ article = "Research"
 other = "Research"
 
 [scenarios.legal]
-sensitive_keywords = ["privilege", "confidential", "attorney", "sealed", "nda"]
+sensitive_keywords = ["privilege", "confidential", "attorney", "sealed", "nda", "work product", "litigation", "counsel only", "settlement", "discovery", "subpoena", "do not disclose", "privileged and confidential"]
 
 [scenarios.legal.department_map]
 invoice = "Finance"
@@ -76,7 +76,7 @@ article = "Legal"
 other = "Legal"
 
 [scenarios.medical]
-sensitive_keywords = ["patient", "diagnosis", "hipaa", "phi", "treatment"]
+sensitive_keywords = ["patient", "diagnosis", "hipaa", "phi", "treatment", "ephi", "medical record", "prescription", "test result", "prognosis", "mrn", "dob", "clinical", "insurance", "referral"]
 
 [scenarios.medical.department_map]
 invoice = "Billing"
@@ -87,7 +87,7 @@ article = "Research"
 other = "Clinical"
 
 [scenarios.other]
-sensitive_keywords = ["confidential", "restricted", "private", "internal only"]
+sensitive_keywords = ["confidential", "restricted", "private", "internal only", "sensitive", "not for distribution", "do not share", "eyes only", "limited access", "classified"]
 
 [scenarios.other.department_map]
 invoice = "Finance"

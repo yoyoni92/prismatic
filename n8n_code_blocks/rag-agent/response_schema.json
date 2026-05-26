@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "properties": {
+    "answer": {
+      "type": "string",
+      "description": "Direct response to the user's query, grounded in retrieved document context."
+    },
+    "based_on": {
+      "type": "array",
+      "description": "Files the answer is based on.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "filename": { "type": "string" },
+          "file_type": { "type": "string", "enum": ["source", "report"] },
+          "department": { "type": "string" },
+          "sensitivity": { "type": "string", "enum": ["public", "internal", "confidential"] },
+          "classification": { "type": "string" }
+        },
+        "required": ["filename", "file_type", "department", "sensitivity", "classification"]
+      }
+    },
+    "caveats": {
+      "type": "string",
+      "description": "Optional. Flags ambiguity, partial coverage, or Flash vs Pro model disagreement."
+    }
+  },
+  "required": ["answer", "based_on"]
+}
