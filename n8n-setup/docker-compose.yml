@@ -19,8 +19,9 @@ services:
       - N8N_RUNNERS_BROKER_LISTEN_ADDRESS=0.0.0.0
       - N8N_DEFAULT_BINARY_DATA_MODE=default
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      - N8N_EXPRESSIONS_ALLOWED_ENV_VARS=GEMINI_API_KEY
+      - N8N_EXPRESSIONS_ALLOWED_ENV_VARS=GEMINI_API_KEY,NOTIFY_EMAIL
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - NOTIFY_EMAIL=${NOTIFY_EMAIL}
     volumes:
       - n8n_data:/home/node/.n8n
       - ../n8n_code_blocks/parser:/home/node/parser
