@@ -1,0 +1,197 @@
+{
+  "name": "Prismatic - Daily Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -400,
+        -16
+      ],
+      "id": "76082497-d046-4eb0-9b95-62bfaba9b81d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1H6Gq-853IvnfEw8_5uYUKFM2xg5A3cFGVZPp6QfeTZ8",
+          "mode": "list",
+          "cachedResultName": "Prismatic - Results",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H6Gq-853IvnfEw8_5uYUKFM2xg5A3cFGVZPp6QfeTZ8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Prismatic_Results",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H6Gq-853IvnfEw8_5uYUKFM2xg5A3cFGVZPp6QfeTZ8/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -192,
+        -16
+      ],
+      "id": "ea62d096-a072-48dd-95fa-2d5fdaae00f1",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aPKG6gWFxIGbnITA",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "357b5721-879c-4aad-b864-349c3b047229",
+              "leftValue": "={{ $json.processed_at }}",
+              "rightValue": "={{ new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "afterOrEquals"
+              }
+            },
+            {
+              "id": "61a31b75-e8c5-408d-ae92-454891da761e",
+              "leftValue": "={{ $json.processed_at }}",
+              "rightValue": "={{ new Date(Date.now()).toISOString() }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "beforeOrEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        16,
+        -16
+      ],
+      "id": "363ead5d-5c41-4e91-9fc0-6142c1f5d1dd",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\nif (rows.length === 0) {\n  return [{ json: { skip: true } }];\n}\n\nconst docs = rows.map(r => r.json);\nconst count = docs.length;\n\n// unique files + run count per file\nconst fileRuns = {};\nfor (const r of docs) {\n  fileRuns[r.document_id] = fileRuns[r.document_id] || { ...r, runs: 0 };\n  fileRuns[r.document_id].runs++;\n}\nconst uniqueDocs = Object.values(fileRuns);\nconst uniqueCount = uniqueDocs.length;\nconst suspiciousCount = uniqueDocs.filter(r => r.runs > 2).length;\n\n// classification breakdown (on unique files)\nconst byClassification = {};\nfor (const r of uniqueDocs) {\n  const c = r.classification || 'other';\n  byClassification[c] = (byClassification[c] || 0) + 1;\n}\n\nconst subject = `📊 Daily Digest — ${count} runs · ${uniqueCount} files${suspiciousCount > 0 ? ` · ⚠️ ${suspiciousCount} suspicious` : ''}`;\n\nconst today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });\n\nconst classificationRows = Object.entries(byClassification).map(([k, v]) => {\n  const pct = Math.round((v / uniqueCount) * 100);\n  return `\n  <tr>\n    <td style=\"padding:10px 16px;border-bottom:1px solid #E2E8F0;font-family:sans-serif;font-size:14px;text-transform:capitalize;\">${k}</td>\n    <td style=\"padding:10px 16px;border-bottom:1px solid #E2E8F0;font-family:sans-serif;font-size:14px;\">\n      <div style=\"display:flex;align-items:center;gap:8px;\">\n        <div style=\"background:#DBEAFE;border-radius:4px;height:8px;width:${pct}px;min-width:4px;\"></div>\n        <span><b>${v}</b> <span style=\"color:#94A3B8;\">(${pct}%)</span></span>\n      </div>\n    </td>\n  </tr>`;\n}).join('');\n\nconst sensitivityBadge = s => {\n  const colors = { confidential: '#FEE2E2;color:#DC2626', internal: '#FEF9C3;color:#CA8A04', public: '#DCFCE7;color:#16A34A' };\n  const style = colors[s] || '#F1F5F9;color:#64748B';\n  return `<span style=\"background:${style};padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;text-transform:uppercase;\">${s}</span>`;\n};\n\nconst docRows = uniqueDocs.map(r => {\n  const suspicious = r.runs > 2;\n  const rowBg = suspicious ? '#FFF7ED' : 'white';\n  const runsCell = suspicious\n    ? `<td style=\"padding:10px 16px;border-bottom:1px solid #E2E8F0;font-family:sans-serif;font-size:13px;color:#EA580C;font-weight:700;\">⚠️ ${r.runs}</td>`\n    : `<td style=\"padding:10px 16px;border-bottom:1px solid #E2E8F0;font-family:sans-serif;font-size:13px;color:#94A3B8;\">${r.runs}</td>`;\n  return `\n  <tr style=\"background:${rowBg};\">\n    <td style=\"padding:10px 16px;border-bottom:1px solid #E2E8F0;font-family:sans-serif;font-size:13px;font-weight:600;\">${r.filename}</td>\n    <td style=\"padding:10px 16px;border-bottom:1px solid #E2E8F0;font-family:sans-serif;font-size:13px;text-transform:capitalize;\">${r.classification}</td>\n    <td style=\"padding:10px 16px;border-bottom:1px solid #E2E8F0;\">${sensitivityBadge(r.sensitivity)}</td>\n    <td style=\"padding:10px 16px;border-bottom:1px solid #E2E8F0;font-family:sans-serif;font-size:13px;color:#64748B;\">${r.routing_tag}</td>\n    ${runsCell}\n  </tr>`;\n}).join('');\n\nconst html = `\n<div style=\"background:#F8FAFC;padding:32px 0;font-family:sans-serif;\">\n<div style=\"max-width:640px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);\">\n\n  <!-- Header -->\n  <div style=\"background:linear-gradient(135deg,#1D4ED8 0%,#4F46E5 100%);padding:32px 40px;\">\n    <div style=\"font-size:12px;color:#BFDBFE;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;\">Prismatic · Daily Report</div>\n    <div style=\"font-size:26px;font-weight:700;color:white;\">📊 Document Digest</div>\n    <div style=\"font-size:13px;color:#BFDBFE;margin-top:6px;\">${today}</div>\n  </div>\n\n  <!-- KPI Cards -->\n  <div style=\"display:flex;gap:0;border-bottom:1px solid #E2E8F0;\">\n    <div style=\"flex:1;padding:20px 24px;border-right:1px solid #E2E8F0;text-align:center;\">\n      <div style=\"font-size:32px;font-weight:700;color:#1D4ED8;\">${count}</div>\n      <div style=\"font-size:12px;color:#94A3B8;margin-top:4px;text-transform:uppercase;letter-spacing:1px;\">Total Runs</div>\n    </div>\n    <div style=\"flex:1;padding:20px 24px;border-right:1px solid #E2E8F0;text-align:center;\">\n      <div style=\"font-size:32px;font-weight:700;color:#0F766E;\">${uniqueCount}</div>\n      <div style=\"font-size:12px;color:#94A3B8;margin-top:4px;text-transform:uppercase;letter-spacing:1px;\">Unique Files</div>\n    </div>\n    <div style=\"flex:1;padding:20px 24px;text-align:center;\">\n      <div style=\"font-size:32px;font-weight:700;color:${suspiciousCount > 0 ? '#DC2626' : '#94A3B8'};\">${suspiciousCount}</div>\n      <div style=\"font-size:12px;color:#94A3B8;margin-top:4px;text-transform:uppercase;letter-spacing:1px;\">Suspicious</div>\n    </div>\n  </div>\n\n  <div style=\"padding:32px 40px;\">\n\n    <!-- Note -->\n    <p style=\"font-size:13px;color:#64748B;margin:0 0 24px 0;\">Each file is analyzed by <b>2 models</b> (Flash + Pro). Expected runs = unique files × 2. Runs &gt; 2 per file are flagged as suspicious.</p>\n\n    <!-- Classification -->\n    <div style=\"font-size:13px;font-weight:700;color:#1E293B;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;\">By Classification</div>\n    <table style=\"width:100%;border-collapse:collapse;border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;margin-bottom:32px;\">\n      <thead>\n        <tr style=\"background:#F8FAFC;\">\n          <th style=\"padding:10px 16px;text-align:left;font-size:12px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:1px;\">Classification</th>\n          <th style=\"padding:10px 16px;text-align:left;font-size:12px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:1px;\">Count</th>\n        </tr>\n      </thead>\n      <tbody>${classificationRows}</tbody>\n    </table>\n\n    <!-- Documents -->\n    <div style=\"font-size:13px;font-weight:700;color:#1E293B;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;\">Documents</div>\n    <table style=\"width:100%;border-collapse:collapse;border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;\">\n      <thead>\n        <tr style=\"background:#F8FAFC;\">\n          <th style=\"padding:10px 16px;text-align:left;font-size:12px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:1px;\">File</th>\n          <th style=\"padding:10px 16px;text-align:left;font-size:12px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:1px;\">Classification</th>\n          <th style=\"padding:10px 16px;text-align:left;font-size:12px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:1px;\">Sensitivity</th>\n          <th style=\"padding:10px 16px;text-align:left;font-size:12px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:1px;\">Routing</th>\n          <th style=\"padding:10px 16px;text-align:left;font-size:12px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:1px;\">Runs</th>\n        </tr>\n      </thead>\n      <tbody>${docRows}</tbody>\n    </table>\n\n  </div>\n\n  <!-- Footer -->\n  <div style=\"background:#F8FAFC;padding:20px 40px;border-top:1px solid #E2E8F0;text-align:center;\">\n    <p style=\"font-size:12px;color:#94A3B8;margin:0;\">Sent automatically by <b>Prismatic</b> · Powered by n8n + Gemini · Daily at 08:00</p>\n  </div>\n\n</div>\n</div>\n`;\n\nreturn [{ json: { count, uniqueCount, suspiciousCount, rows: docs, byClassification, skip: false, emailSubject: subject, emailHtml: html } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        -16
+      ],
+      "id": "4e578207-fcd4-45a7-b380-0e66195c50e4",
+      "name": "Build Daily Digest HTML"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.NOTIFY_EMAIL }}",
+        "subject": "= {{ $json.emailSubject }}",
+        "message": "={{ $json.emailHtml }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        -16
+      ],
+      "id": "615dfe5f-7384-4992-84cf-2a7e09043e11",
+      "name": "Send Daily Digest Notification Email",
+      "webhookId": "b750c5eb-e341-430f-a062-f71eeea91a8f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IzbfF58SmrN4HfDd",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Build Daily Digest HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Daily Digest HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Daily Digest Notification Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "17162090-9652-4497-851b-dba4ef529606",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "561ac8493490f6aade17a19ff2fcbe93369495ebc353fd1f0bd7f0b1d3ed3233"
+  },
+  "id": "8UK52WZIWePNM3SY",
+  "tags": []
+}
