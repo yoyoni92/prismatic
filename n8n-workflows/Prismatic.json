@@ -65,7 +65,7 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        -640,
+        -544,
         -144
       ],
       "id": "be6199c8-9c98-4cf7-b446-dbd8670a069e",
@@ -353,7 +353,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const allItems = $input.all();\n\nconst flash = allItems.find(i => i.json.gemini_flash)?.json.gemini_flash ?? {};\nconst pro   = allItems.find(i => i.json.gemini_pro)?.json.gemini_pro   ?? {};\n\nconst diff = {\n  classification_match: flash.classification === pro.classification,\n  sentiment_match:      flash.sentiment === pro.sentiment,\n  flash_confidence:     flash.confidence_score,\n  pro_confidence:       pro.confidence_score ?? null,\n  flash_summary:        flash.summary,\n  pro_summary:          pro.summary ?? null,\n};\n\nconst scenario = $('Extract Scenario').first().json;\n\nreturn [{\n  json: {\n    drive_file_id:      scenario.id,\n    filename:           scenario.name,\n    file_extension:     scenario.fileExtension,\n    mime_type:          scenario.mimeType,\n    detected_scenario:  scenario.detected_scenario,\n    scenario_reasoning: scenario.scenario_reasoning,\n    gemini_flash:       flash,\n    gemini_pro:         pro,\n    flash_vs_pro_diff:  diff,\n    source_zip:         scenario.source_zip ?? \"\",\n  }\n}];\n"
+        "jsCode": "const allItems = $input.all();\n\nconst flash = allItems.find(i => i.json.gemini_flash)?.json.gemini_flash ?? {};\nconst pro   = allItems.find(i => i.json.gemini_pro)?.json.gemini_pro   ?? {};\n\nconst diff = {\n  classification_match: flash.classification === pro.classification,\n  sentiment_match:      flash.sentiment === pro.sentiment,\n  flash_confidence:     flash.confidence_score,\n  pro_confidence:       pro.confidence_score ?? null,\n  flash_summary:        flash.summary,\n  pro_summary:          pro.summary ?? null,\n};\n\nconst scenario = $('Extract Scenario').first().json;\nconst file     = $('Download file').first().json;\n\nreturn [{\n  json: {\n    drive_file_id:      file.id,\n    filename:           file.name,\n    file_extension:     file.fileExtension,\n    mime_type:          file.mimeType,\n    detected_scenario:  scenario.detected_scenario,\n    scenario_reasoning: scenario.scenario_reasoning,\n    gemini_flash:       flash,\n    gemini_pro:         pro,\n    flash_vs_pro_diff:  diff,\n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -400,7 +400,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -160,
+        -240,
         -144
       ],
       "id": "a4a4f629-ab51-42b2-a6c8-86fc09c3d20c",
@@ -955,90 +955,6 @@
           "name": "Gmail account"
         }
       }
-    },
-    {
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $('Download file').item.json.fileExtension }}",
-                    "rightValue": "zip",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    },
-                    "id": "d6b2358a-8557-4dad-8e5c-4de10bda2223"
-                  }
-                ],
-                "combinator": "and"
-              }
-            }
-          ]
-        },
-        "options": {
-          "fallbackOutput": "extra"
-        }
-      },
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.4,
-      "position": [
-        -464,
-        -144
-      ],
-      "id": "95a08e09-b288-483a-b893-6bdae8e8bc0e",
-      "name": "Switch"
-    },
-    {
-      "parameters": {
-        "content": "##  🗃️  Zip Handiling\n",
-        "height": 432,
-        "width": 1188,
-        "color": 2
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [
-        -944,
-        -768
-      ],
-      "id": "2232f415-eed6-4d43-96b0-65916af077fd",
-      "name": "Sticky Note6"
-    },
-    {
-      "parameters": {
-        "language": "pythonNative",
-        "pythonCode": "import base64, io, zipfile, os\n\nresults = []\nfor item in _items:\n    json_data = item.get(\"json\", {})\n    binary = item.get(\"binary\", {}).get(\"data\", {})\n    zip_filename = json_data.get(\"name\", \"batch.zip\")\n    drive_file_id = json_data.get(\"id\", \"\")\n    raw = binary.get(\"data\", \"\")\n    if not raw:\n        continue\n    try:\n        zip_bytes = base64.b64decode(raw)\n    except Exception:\n        zip_bytes = base64.urlsafe_b64decode(raw + \"==\")\n    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:\n        for name in zf.namelist():\n            if name.endswith(\"/\") or os.path.basename(name).startswith(\".\"):\n                continue\n            ext = os.path.splitext(name)[1].lower()\n            if ext not in (\".pdf\", \".docx\", \".txt\", \".doc\"):\n                continue\n            file_b64 = base64.b64encode(zf.read(name)).decode()\n            results.append({\"json\": {\n                **json_data,\n                \"name\": os.path.basename(name),\n                \"fileExtension\": ext.lstrip(\".\"),\n                \"_fileBase64\": file_b64,\n                \"_fileName\": os.path.basename(name),\n                \"source_zip\": zip_filename,\n                \"drive_file_id\": drive_file_id,\n            }})\nreturn results\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -864,
-        -592
-      ],
-      "id": "3392de7e-9bc5-4dee-8e6f-f08fcc3e6774",
-      "name": "Unzip"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [
-        -656,
-        -592
-      ],
-      "id": "973e82a6-ee63-4128-872a-fcb3e07d0b76",
-      "name": "Loop Over Zip Files"
     }
   ],
   "pinData": {},
@@ -1056,7 +972,18 @@
     },
     "Download file": {
       "main": [
-        []
+        [
+          {
+            "node": "Set Gemini Api Key",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Detect Scenario": {
@@ -1408,52 +1335,6 @@
           }
         ]
       ]
-    },
-    "Switch": {
-      "main": [
-        [
-          {
-            "node": "Unzip",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Set Gemini Api Key",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Pinecone Vector Store",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Unzip": {
-      "main": [
-        [
-          {
-            "node": "Loop Over Zip Files",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop Over Zip Files": {
-      "main": [
-        [],
-        [
-          {
-            "node": "Set Gemini Api Key",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "active": true,
@@ -1464,7 +1345,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": true
   },
-  "versionId": "ee432848-12d2-4e59-91af-d8d97e831958",
+  "versionId": "adb3a5fd-5367-4ee8-ba91-9871c290f7c1",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "561ac8493490f6aade17a19ff2fcbe93369495ebc353fd1f0bd7f0b1d3ed3233"

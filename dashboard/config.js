@@ -1,0 +1,1 @@
+window.PRISMATIC_CONFIG={};

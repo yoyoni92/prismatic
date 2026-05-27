@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prismatic - Intelligence Dashboard</title>
   <script src="/config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -349,6 +349,12 @@
       background:var(--surface-2); border:1px solid var(--border);
       border-radius:2px; padding:12px 14px;
     }
+    .msg-card-no-results {
+      background:transparent; border:1px solid var(--border-2);
+      border-left:3px solid var(--subtle); border-radius:0 2px 2px 0;
+      padding:12px 14px;
+    }
+    .msg-card-no-results .msg-answer-text { color:var(--muted); }
     .msg-answer-text {
       font-family:'IBM Plex Mono',monospace;
       font-size:12px; color:var(--text); line-height:1.75;
@@ -586,7 +592,7 @@
 
     /* ══ DATA ══ */
     async function fetchSheetData() {
-      const res  = await fetch('/proxy/results');
+      const res  = await fetch('/proxy/results', {signal: AbortSignal.timeout(10000)});
       if (!res.ok) throw new Error(`Results API error: ${res.status}`);
       const data = await res.json();
       return (data.rows||[]).map(r => ({
@@ -618,7 +624,7 @@
     }
 
     /* ══ RENDER ══ */
-    let classChart, sentChart;
+    let classChart, sentChart, lastDocs;
 
     function renderStats(rows, docs) {
       const uniqueFiles = new Set(rows.map(r => r.filename)).size;
@@ -638,6 +644,8 @@
     }
 
     function renderCharts(docs) {
+      lastDocs = docs;
+      if (typeof Chart === 'undefined') return;
       const reps = docs.map(d => d.flash||d.pro||d.base);
       const cc={}, sc={};
       for (const r of reps) {
@@ -731,16 +739,15 @@
         renderStats(rows,docs); renderCharts(docs); renderTable(docs);
       } catch(e) {
         document.getElementById('last-refresh').textContent = `Error: ${e.message}`;
+        ['stat-files','stat-reviews','stat-confidential','stat-confidence','stat-review','stat-disputes']
+          .forEach(id => { const el=document.getElementById(id); if(el&&el.textContent==='') el.textContent='—'; });
       }
     }
-    refresh();
-    setInterval(refresh, 60_000);
-
     /* ══ CATEGORIES ══ */
     async function loadCategories() {
       const el = document.getElementById('categories-list');
       try {
-        const res  = await fetch('/proxy/api-categories');
+        const res  = await fetch('/proxy/api-categories', {signal: AbortSignal.timeout(5000)});
         const data = await res.json();
         el.innerHTML = (data.categories||[]).map(c =>
           `<span class="category-pill"><span class="category-dot"></span>${esc(c)}</span>`
@@ -749,7 +756,6 @@
         el.innerHTML = `<span style="font-size:11px;color:var(--red);font-family:'IBM Plex Mono',monospace">API unavailable</span>`;
       }
     }
-    loadCategories();
 
     /* ══ HEALTH ══ */
     async function checkHealth(id, url) {
@@ -765,8 +771,17 @@
       checkHealth('health-api', '/proxy/api-health');
       checkHealth('health-n8n', '/proxy/n8n-health');
     }
+
+    refresh();
+    setInterval(refresh, 60_000);
+    loadCategories();
     pollHealth();
     setInterval(pollHealth, 30_000);
+
+    // If Chart.js was deferred and loads after first refresh, render charts then
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof Chart !== 'undefined' && lastDocs) renderCharts(lastDocs);
+    });
 
     /* ══ DOC RAIN ══ */
     (function() {
@@ -844,12 +859,14 @@
       }</div></div>`;
     }
 
-    function addAssistantMsg({answer,based_on,caveats}) {
-      const hasConf=(based_on||[]).some(s=>(s.sensitivity||'').toLowerCase()==='confidential');
+    function addAssistantMsg({answer,based_on,caveats,status}) {
+      const noResults=status==='no_results';
+      const hasConf=!noResults&&(based_on||[]).some(s=>(s.sensitivity||'').toLowerCase()==='confidential');
+      const cardCls=noResults?'msg-card-no-results':'msg-card';
       const w=document.createElement('div'); w.className='msg-row msg-row-assistant';
       w.innerHTML=`<div class="msg-avatar">P</div><div class="msg-assistant-body">
         ${hasConf?'<div class="confidential-banner">⚠ Contains Confidential Material</div>':''}
-        <div class="msg-card"><div class="msg-answer-text">${esc(answer)}</div>${buildSources(based_on)}</div>
+        <div class="${cardCls}"><div class="msg-answer-text">${esc(answer)}</div>${noResults?'':buildSources(based_on)}</div>
         ${caveats?`<div class="msg-caveat"><span class="caveat-icon">⚠</span><span class="caveat-text">${esc(caveats)}</span></div>`:''}
         <div class="msg-ts">${nowTs()}</div>
       </div>`;

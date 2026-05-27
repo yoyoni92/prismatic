@@ -77,7 +77,7 @@ services:
       - "3000:80"
     environment: []
     volumes:
-      - ../dashboard/index.html:/usr/share/nginx/html/index.html:ro
+      - ../dashboard:/usr/share/nginx/html
     networks:
       - prismatic
 

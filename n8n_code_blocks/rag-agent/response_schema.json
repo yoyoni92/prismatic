@@ -20,10 +20,15 @@
         "required": ["filename", "file_type", "department", "sensitivity", "classification"]
       }
     },
+    "status": {
+      "type": "string",
+      "enum": ["success", "partial", "no_results"],
+      "description": "success: answer is fully grounded. partial: context only partially covers the query. no_results: no relevant documents found."
+    },
     "caveats": {
       "type": "string",
       "description": "Optional. Flags ambiguity, partial coverage, or Flash vs Pro model disagreement."
     }
   },
-  "required": ["answer", "based_on"]
+  "required": ["answer", "status"]
 }
