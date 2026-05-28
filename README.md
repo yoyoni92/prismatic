@@ -3,18 +3,29 @@
   <h1>Prismatic</h1>
 </div>
 
-An n8n-based document intelligence pipeline. Uploads from Google Drive are parsed, domain-classified, and analyzed by Gemini — producing structured JSON with summary, entities, sentiment, and action items.
+An n8n-based document intelligence pipeline. Uploads from Google Drive are parsed, domain-classified, and analyzed by Gemini — producing structured JSON with summary, entities, sentiment, and action items. Supports single files and ZIP archives — ZIP contents are unpacked and each file is processed individually.
 
 ## How it works
 
 ```
-Google Drive (new file trigger)
+Google Drive (new file trigger — prismatic-input folder)
+        │
+        ▼
+  Prismatic Controller
+        ├─ IF .zip → Unzip (Python) → N items, each with _fileBase64 + _fileName
+        └─ IF other → Convert to Base64 → 1 item with _fileBase64 + _fileName
+        │
+        │  Tag Items: adds _total + _idx (for loop-aware throttling)
+        │
+        ▼
+  Loop: feed one file at a time to Prismatic File Analyze
+        (1-minute gap between files — no concurrent downstream calls)
+        │
+        ▼
+  Prismatic File Analyze (called per file via Execute Workflow)
         │
         ▼
   Set node — injects _geminiApiKey from $env.GEMINI_API_KEY
-        │
-        ▼
-  Google Drive Download
         │
         ▼
   Python Code node: parse_document.py
@@ -67,7 +78,19 @@ Google Drive (new file trigger)
                            │
                            ▼
   Code: merge_results.js   — assembles final enriched record from all three nodes
+        │                       includes source_zip when file came from a ZIP archive
 ```
+
+### ZIP file handling
+
+Upload a `.zip` file to the `prismatic-input` folder and the Controller automatically unpacks it. Each file inside is treated as an independent document — parsed, classified, and analyzed separately with a 1-minute gap between each to avoid rate limits.
+
+Every extracted file carries a `_sourceZip` field (`{id, name}`) that traces it back to its archive. This appears in:
+- The Google Sheets `source_zip` column
+- The Markdown analysis report
+- The summary notification email
+
+Supported formats inside a ZIP: PDF, DOCX, TXT, MD. Other file types produce an `unsupported file type` error in the parsed output and are skipped gracefully.
 
 ### Detected scenarios
 
@@ -121,6 +144,10 @@ prismatic/
 │   └── tests/
 │
 ├── n8n_code_blocks/
+│   ├── controller/
+│   │   ├── tag_items.js           # Adds _total + _idx to each item for loop throttling
+│   │   └── unzip.py               # Extracts ZIP contents → items with _fileBase64, _fileName,
+│   │                              #   mimeType, fileExtension, _sourceZip
 │   ├── parser/
 │   │   └── parse_document.py      # Python Code node — paste into n8n
 │   ├── gemini/
@@ -128,10 +155,15 @@ prismatic/
 │   │   ├── extract_scenario.js    # Parses detected_scenario from Gemini response
 │   │   ├── build_prompt.js        # Builds domain-specific analysis request
 │   │   ├── parse_response.js      # Validates and extracts gemini_flash output
-│   │   └── diff_models.js         # Optional: compares Flash vs Pro output
-│   └── fastapi-enrichment/
-│       ├── merge_results.js       # Code node — assembles final record via $() references
-│       └── http_nodes_config.md   # URL/body config for the 2 HTTP Request nodes
+│   │   └── diff_models.js         # Compares Flash vs Pro output; reads metadata from Start node
+│   ├── fastapi-enrichment/
+│   │   ├── merge_results.js       # Code node — assembles final record via $() references
+│   │   └── http_nodes_config.md   # URL/body config for the 2 HTTP Request nodes
+│   ├── notification/
+│   │   ├── html_summary_email.js  # Builds HTML summary email (includes Source ZIP if present)
+│   │   └── html_confidential_alert.js  # Builds urgent confidential alert email
+│   └── reports/
+│       └── generate_reports.js    # Builds JSON + MD reports (includes Source ZIP if present)
 │
 ├── docs/
 │   └── plans/
