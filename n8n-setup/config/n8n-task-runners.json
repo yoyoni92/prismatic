@@ -49,7 +49,7 @@
 				"GEMINI_API_KEY"
 			],
 			"env-overrides": {
-				"N8N_RUNNERS_STDLIB_ALLOW": "base64,os,tempfile,pathlib",
+				"N8N_RUNNERS_STDLIB_ALLOW": "base64,os,tempfile,pathlib,zipfile,io",
 				"N8N_RUNNERS_EXTERNAL_ALLOW": "pdfplumber,pdfminer,docx,google,google.genai"
 			}
 		}
