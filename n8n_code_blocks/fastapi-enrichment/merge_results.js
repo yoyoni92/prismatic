@@ -23,11 +23,11 @@ return [
     json: {
       ...shared,
       model:            $('Set Gemini Api Key').first().json.gemini_flash_model,
-      classification:   flash.classification,
-      sentiment:        flash.sentiment,
-      confidence_score: flash.confidence_score,
-      summary:          flash.summary.slice(0, 500),
-      action_items:     flash.action_items.join(', '),
+      classification:   flash.classification || pro.classification,
+      sentiment:        flash.sentiment || pro.sentiment,
+      confidence_score: flash.confidence_score || 0,
+      summary:          (flash.summary || pro.summary || '').slice(0, 500),
+      action_items:     (flash.action_items?.join(', ')) || (pro.action_items ?? []).join(', '),
     }
   },
   {
