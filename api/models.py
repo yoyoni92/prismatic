@@ -68,6 +68,7 @@ class SheetRow(BaseModel):
     model: str = ""
     filename: str = ""
     file_type: str = ""
+    source_zip: str = ""
     processed_at: str = ""
     classification: str = ""
     department: str = ""

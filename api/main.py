@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import time
 
@@ -21,10 +22,25 @@ from api.models import (
 from api.scenarios import CATEGORIES
 from api.sensitivity import classify_sensitivity
 
+def _parse_source_zip(v: str) -> str:
+    try:
+        obj = json.loads(v)
+        return obj.get("name", v)
+    except (ValueError, TypeError, AttributeError):
+        return v
+
+
+def _try_float(v: str) -> float:
+    try:
+        return float(v)
+    except (ValueError, TypeError):
+        return 0.0
+
+
 _SHEET_CACHE: ResultsResponse | None = None
 _SHEET_CACHE_TS: float = 0.0
 _SHEET_CACHE_TTL = 60.0
-_SHEET_RANGE = "Prismatic_Results!A2:N"
+_SHEET_RANGE = "Prismatic_Results!A2:P"
 
 app = FastAPI(title="Prismatic Enrichment API", version="1.0.0")
 
@@ -72,17 +88,18 @@ async def results() -> ResultsResponse:
             document_id=r[0]  if len(r) > 0  else "",
             drive_file_id=r[1] if len(r) > 1  else "",
             model=r[2]         if len(r) > 2  else "",
-            filename=r[3]      if len(r) > 3  else "",
-            file_type=r[4]     if len(r) > 4  else "",
-            processed_at=r[5]  if len(r) > 5  else "",
-            classification=r[6] if len(r) > 6 else "",
-            department=r[7]    if len(r) > 7  else "",
-            sentiment=r[8]     if len(r) > 8  else "",
-            confidence_score=float(r[9]) if len(r) > 9 and r[9] else 0.0,
-            sensitivity=r[10]  if len(r) > 10 else "",
-            routing_tag=r[11]  if len(r) > 11 else "",
-            summary=r[12]      if len(r) > 12 else "",
-            action_items=r[13] if len(r) > 13 else "",
+            filename=r[3]       if len(r) > 3  else "",
+            file_type=r[4]      if len(r) > 4  else "",
+            source_zip=_parse_source_zip(r[5]) if len(r) > 5 and r[5] else "",
+            processed_at=r[6]   if len(r) > 6  else "",
+            classification=r[7] if len(r) > 7  else "",
+            department=r[8]     if len(r) > 8  else "",
+            sentiment=r[9]      if len(r) > 9  else "",
+            confidence_score=_try_float(r[10]) if len(r) > 10 else 0.0,
+            sensitivity=r[11]   if len(r) > 11 else "",
+            routing_tag=r[12]   if len(r) > 12 else "",
+            summary=r[13]       if len(r) > 13 else "",
+            action_items=r[14]  if len(r) > 14 else "",
         )
         for r in raw_rows
     ]

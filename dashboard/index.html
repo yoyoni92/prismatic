@@ -218,8 +218,8 @@
 
     .filename-cell {
       font-family:'IBM Plex Mono',monospace; font-size:12px;
-      color:var(--text); max-width:220px;
-      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+      color:var(--text); max-width:280px;
+      overflow-wrap:break-word; word-break:break-all;
     }
     .class-cell { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); }
 
@@ -259,6 +259,15 @@
       background:var(--amber-bg); border:1px solid rgba(210,153,34,.25);
       border-radius:4px; padding:2px 7px; margin-top:1px;
     }
+    .zip-badge {
+      display:inline-flex; align-items:center; gap:3px;
+      padding:1px 5px; border-radius:3px; flex-shrink:0;
+      font-size:9px; font-weight:700; font-family:'IBM Plex Mono',monospace;
+      letter-spacing:.04em; white-space:nowrap;
+      background:rgba(255,152,48,.12); color:var(--amber);
+      border:1px solid rgba(255,152,48,.25);
+    }
+    .zip-badge svg { width:9px; height:9px; flex-shrink:0; }
 
     /* ═══════════════════════════════
        CHAT PANEL
@@ -601,6 +610,7 @@
         model:            r.model,
         filename:         r.filename,
         file_type:        r.file_type,
+        source_zip:       r.source_zip,
         processed_at:     r.processed_at,
         classification:   r.classification,
         department:       r.department,
@@ -640,7 +650,6 @@
         ? (rows.reduce((s,r)=>s+r.confidence_score,0)/rows.length).toFixed(2) : '-';
       document.getElementById('stat-review').textContent       = docs.filter(d=>d.base.routing_tag==='needs-review').length;
       document.getElementById('stat-disputes').textContent     = disputes;
-      document.getElementById('last-refresh').textContent      = `Refreshed ${new Date().toLocaleTimeString()}`;
     }
 
     function renderCharts(docs) {
@@ -719,7 +728,10 @@
         </div>`;
 
         return `<tr>
-          <td><div class="filename-cell" title="${esc(base.filename)}">${esc(base.filename)}</div></td>
+          <td><div style="max-width:280px;display:flex;align-items:flex-start;gap:5px">
+            <div class="filename-cell" style="flex:1;min-width:0" title="${esc(base.filename)}">${esc(base.filename)}</div>
+            ${base.source_zip?`<span class="zip-badge" title="${esc(base.source_zip)}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5"/><line x1="6" y1="1" x2="6" y2="15"/><line x1="6" y1="4" x2="10" y2="4"/><line x1="6" y1="7" x2="10" y2="7"/><line x1="6" y1="10" x2="10" y2="10"/></svg>ZIP</span>`:''}
+          </div></td>
           <td><span class="class-cell">${esc(base.classification)}</span></td>
           <td style="font-size:12px;color:var(--muted)">${esc(base.department)}</td>
           <td>${modelCol}</td>
@@ -737,8 +749,13 @@
         const rows = await fetchSheetData();
         const docs = groupDocs(rows);
         renderStats(rows,docs); renderCharts(docs); renderTable(docs);
+        const lr = document.getElementById('last-refresh');
+        lr.textContent = `Refreshed ${new Date().toLocaleTimeString()}`;
+        lr.style.color = '';
       } catch(e) {
-        document.getElementById('last-refresh').textContent = `Error: ${e.message}`;
+        const lr = document.getElementById('last-refresh');
+        lr.textContent = `Error: ${e.message}`;
+        lr.style.color = 'var(--red)';
         ['stat-files','stat-reviews','stat-confidential','stat-confidence','stat-review','stat-disputes']
           .forEach(id => { const el=document.getElementById(id); if(el&&el.textContent==='') el.textContent='—'; });
       }
