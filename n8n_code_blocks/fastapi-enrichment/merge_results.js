@@ -14,6 +14,7 @@ const shared = {
   department:        enrich.department,
   sensitivity:       sens.sensitivity,
   routing_tag:       enrich.routing_tag,
+  source_zip:        general_data.source_zip ?? null,
   flash_vs_pro_diff: JSON.stringify(general_data.flash_vs_pro_diff),
 };
 

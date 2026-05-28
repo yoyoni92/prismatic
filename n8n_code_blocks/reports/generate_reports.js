@@ -11,7 +11,7 @@ const mdReport = `# Document Analysis Report
 **File:** ${flash.filename}
 **Processed:** ${flash.processed_at}
 **Document ID:** ${flash.document_id}
-**Drive File:** ${flash.drive_file_id}
+**Drive File:** ${flash.drive_file_id}${flash.source_zip ? `\n**Source ZIP:** ${JSON.parse(flash.source_zip).name} (${JSON.parse(flash.source_zip).id})` : ''}
 
 ## Classification
 - **Type:** ${flash.classification}

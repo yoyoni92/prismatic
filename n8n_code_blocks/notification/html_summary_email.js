@@ -14,6 +14,7 @@ const html = `
 <h2 style="color:#1D4ED8;">📄 Prismatic Document Processed</h2>
 <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px;">
   <tr><td style="padding:8px;background:#F1F5F9;"><b>File</b></td><td style="padding:8px;">${report.filename}</td></tr>
+  ${report.source_zip ? `<tr><td style="padding:8px;background:#F1F5F9;"><b>Source ZIP</b></td><td style="padding:8px;">${JSON.parse(report.source_zip).name}</td></tr>` : ''}
   <tr><td style="padding:8px;background:#F1F5F9;"><b>Department</b></td><td style="padding:8px;">${report.department}</td></tr>
   <tr><td style="padding:8px;background:#F1F5F9;"><b>Sensitivity</b></td><td style="padding:8px;">${report.sensitivity}</td></tr>
   <tr><td style="padding:8px;background:#F1F5F9;"><b>Routing Tag</b></td><td style="padding:8px;">${report.routing_tag}</td></tr>
