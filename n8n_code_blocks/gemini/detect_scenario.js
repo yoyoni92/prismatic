@@ -1,4 +1,4 @@
-const text = $input.first().json.parsed?.full_text ?? $input.first().json.full_text ?? "";
+const text = $input.first().json.parsed?.full_text ?? $input.first().json.full_text ?? $input.first().json.pageContent ?? "";
 const excerpt = text.slice(0, 1000);
 
 const prompt = `## Task

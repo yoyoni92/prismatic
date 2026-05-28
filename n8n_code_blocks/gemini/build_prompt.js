@@ -1,4 +1,4 @@
-const text = $input.first().json.parsed?.full_text ?? $input.first().json.full_text ?? "";
+const text = $input.first().json.parsed?.full_text ?? $input.first().json.full_text ?? $input.first().json.pageContent ?? "";
 
 // Prefer AI-detected scenario, fall back to env var, then default
 const scenario = $input.first().json.detected_scenario ?? "business";
