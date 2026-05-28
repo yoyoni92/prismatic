@@ -116,6 +116,7 @@ The Python code runs inside a dedicated **runners container** (not the main n8n 
 prismatic/
 ├── dashboard/                     # Live intelligence dashboard (nginx, served on port 3000)
 │   ├── index.html
+│   ├── config.js                  # Runtime config (Sheet ID, webhook URL)
 │   ├── prismatic-logo.png
 │   ├── nginx.conf
 │   └── Dockerfile
@@ -130,6 +131,13 @@ prismatic/
 │   ├── start-n8n.sh
 │   ├── start-n8n.bat
 │   └── README.md
+│
+├── n8n-workflows/                 # Exportable workflow JSON files
+│   ├── Prismatic Controller.json
+│   ├── Prismatic File Analyze.json
+│   ├── Prismatic - Daily Digest.json
+│   ├── Prismatic RAG Chatbot.json
+│   └── Rag Ingestion.json
 │
 ├── api/                           # FastAPI enrichment microservice
 │   ├── main.py                    # 4 endpoints: /health /categories /enrich /sensitivity
@@ -159,6 +167,11 @@ prismatic/
 │   ├── fastapi-enrichment/
 │   │   ├── merge_results.js       # Code node — assembles final record via $() references
 │   │   └── http_nodes_config.md   # URL/body config for the 2 HTTP Request nodes
+│   ├── daily-digest/
+│   │   └── build-digest.js        # Builds the daily digest email body
+│   ├── rag-agent/
+│   │   ├── system_prompt.md       # RAG chatbot system prompt
+│   │   └── response_schema.json   # Structured output schema for RAG responses
 │   ├── notification/
 │   │   ├── html_summary_email.js  # Builds HTML summary email (includes Source ZIP if present)
 │   │   └── html_confidential_alert.js  # Builds urgent confidential alert email
@@ -166,8 +179,7 @@ prismatic/
 │       └── generate_reports.js    # Builds JSON + MD reports (includes Source ZIP if present)
 │
 ├── docs/
-│   └── plans/
-│       └── EP3-gemini.md          # EP3 implementation plan
+│   └── evidence/                  # Screenshots and evidence for submission
 │
 ├── tests/                         # pytest suite for parse_document.py
 │   ├── conftest.py
@@ -215,7 +227,16 @@ On Windows: double-click `n8n-setup/start-n8n.bat`
 
 n8n will be available at [http://localhost:5678](http://localhost:5678).
 
-### 3. Wire the parser in n8n
+### 3. Import workflows
+
+In n8n: **Settings → Import** and upload each JSON from `n8n-workflows/` in this order:
+
+1. `Prismatic File Analyze.json`
+2. `Prismatic Controller.json`
+3. `Prismatic - Daily Digest.json`
+4. `Prismatic RAG Chatbot.json` + `Rag Ingestion.json` (optional — RAG features)
+
+### 5. Wire the parser in n8n
 
 1. Add a **Set** node before the Python Code node and set:
    - Field: `_geminiApiKey` → Value: `{{ $env.GEMINI_API_KEY }}` (expression mode)
@@ -225,7 +246,7 @@ n8n will be available at [http://localhost:5678](http://localhost:5678).
 
 3. **Optional:** set `USE_VISION = True` at the top of the script to have embedded images described by Gemini Vision.
 
-### 4. Wire the AI analysis in n8n
+### 6. Wire the AI analysis in n8n
 
 Add these nodes after the parser, in order:
 
@@ -238,7 +259,7 @@ Add these nodes after the parser, in order:
 | Gemini Flash (analyze) | HTTP Request | same URL as above, body `={{ $json.requestBody }}` |
 | Parse Response | Code | paste `parse_response.js` |
 
-### 5. Wire the enrichment in n8n
+### 7. Wire the enrichment in n8n
 
 Add these nodes after **Final Result With Models Diff**, running Enrich and Sensitivity **in parallel**:
 
@@ -253,11 +274,19 @@ Wire both HTTP nodes from **Final Result With Models Diff** (parallel branches),
 
 ## Running tests
 
+Parser tests (root):
+
 ```bash
 poetry run pytest
 ```
 
-Tests cover: PDF parsing, DOCX parsing, plain text, Vision fallback behaviour, `process_items` edge cases (missing binary, unsupported extension, multiple items, field preservation).
+API tests:
+
+```bash
+cd api && poetry run pytest
+```
+
+Parser tests cover: PDF parsing, DOCX parsing, plain text, Vision fallback behaviour, `process_items` edge cases (missing binary, unsupported extension, multiple items, field preservation). API tests cover all 4 endpoints, enrichment routing, and sensitivity classification.
 
 ## Python dependencies
 
@@ -306,3 +335,13 @@ docker compose -f n8n-setup/docker-compose.yml --env-file .env up -d api
 ```
 
 The API starts automatically before n8n (enforced via `depends_on: condition: service_healthy`).
+
+## Live Dashboard
+
+Start the dashboard container:
+
+```bash
+docker compose -f n8n-setup/docker-compose.yml --env-file .env up -d dashboard
+```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.

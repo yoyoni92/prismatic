@@ -190,6 +190,19 @@ def process_items(items, binary_property=BINARY_PROPERTY, use_vision=USE_VISION,
         file_bytes = _to_bytes(raw)
         ext = Path(file_name).suffix.lower()
 
+        # if no extension, derive from fileExtension field then mimeType
+        if not ext:
+            file_ext = json_data.get("fileExtension", "")
+            mime = json_data.get("mimeType", "")
+            if file_ext:
+                ext = f".{file_ext.lower()}"
+            elif "pdf" in mime:
+                ext = ".pdf"
+            elif "wordprocessing" in mime or "docx" in mime:
+                ext = ".docx"
+            elif "text" in mime:
+                ext = ".txt"
+
         tmp_path = None
         try:
             with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:

@@ -133,6 +133,22 @@
           "name": "Gmail account"
         }
       }
+    },
+    {
+      "parameters": {
+        "content": "## Daily Digest\n* Generate report daily on our analysisi",
+        "height": 464,
+        "width": 1264,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -208
+      ],
+      "id": "da7a3042-2bb6-4f87-92ad-5cc3cfe30d46",
+      "name": "Sticky Note"
     }
   ],
   "pinData": {},
@@ -187,7 +203,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "17162090-9652-4497-851b-dba4ef529606",
+  "versionId": "d3c28b43-f759-48a4-b85a-a0d9b94a416b",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "561ac8493490f6aade17a19ff2fcbe93369495ebc353fd1f0bd7f0b1d3ed3233"
