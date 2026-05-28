@@ -1,3 +1,4 @@
+
 {
   "name": "Prismatic Controller",
   "nodes": [
@@ -121,7 +122,7 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1072,
+        1136,
         -80
       ],
       "name": "Call Rag Ingestion",
@@ -162,7 +163,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        288,
+        16,
         -96
       ],
       "id": "ba633d3e-2795-487b-bb3c-3ab416a7999d",
@@ -188,7 +189,7 @@
           "value": "Hv5AMglgKhMymRR7",
           "mode": "list",
           "cachedResultUrl": "/workflow/Hv5AMglgKhMymRR7",
-          "cachedResultName": "Prismatic-File-Analyze"
+          "cachedResultName": "Prismatic File Analyze"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -198,12 +199,14 @@
           "attemptToConvertTypes": false,
           "convertFieldsToString": true
         },
-        "options": {}
+        "options": {
+          "waitForSubWorkflow": false
+        }
       },
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1088,
+        1152,
         144
       ],
       "name": "Call Prismatic-File-Analyze1",
@@ -211,59 +214,17 @@
     },
     {
       "parameters": {
-        "operation": "append",
-        "documentId": {
-          "__rl": true,
-          "value": "1knZCC28LI5lP0WfIjNmoLg6xgHMaf9OUlIzE-owtn-Y",
-          "mode": "list",
-          "cachedResultName": "test-multi",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1knZCC28LI5lP0WfIjNmoLg6xgHMaf9OUlIzE-owtn-Y/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "גיליון1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1knZCC28LI5lP0WfIjNmoLg6xgHMaf9OUlIzE-owtn-Y/edit#gid=0"
-        },
-        "columns": {
-          "mappingMode": "autoMapInputData",
-          "value": {},
-          "matchingColumns": [
-            "Filename"
-          ],
-          "schema": [],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
-      "position": [
-        -368,
-        -336
-      ],
-      "id": "f4bd0748-2394-43a9-b4e1-da126c65415f",
-      "name": "Append row in sheet",
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "aPKG6gWFxIGbnITA",
-          "name": "Google Sheets account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "operation": "binaryToPropery",
         "binaryPropertyName": "=data",
         "destinationKey": "_fileBase64",
-        "options": {}
+        "options": {
+          "keepSource": "json"
+        }
       },
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        320,
+        160,
         144
       ],
       "id": "7ab306dd-d168-4136-b24e-7d6cf2bf6a11",
@@ -351,21 +312,11 @@
         ]
       ]
     },
-    "Append row in sheet": {
-      "main": [
-        []
-      ]
-    },
     "Extract from File": {
       "main": [
         [
           {
-            "node": "Call Rag Ingestion",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Call Prismatic-File-Analyze1",
+            "node": "Tag Items",
             "type": "main",
             "index": 0
           }
@@ -400,7 +351,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "375610a6-2084-4b18-9cb2-55d564c39614",
+  "versionId": "68f72920-d13c-42db-96ae-006a8c8f101e",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "561ac8493490f6aade17a19ff2fcbe93369495ebc353fd1f0bd7f0b1d3ed3233"

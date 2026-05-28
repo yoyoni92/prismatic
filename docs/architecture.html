@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Prismatic — System Architecture</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0b0d14;
+  color: #e2e8f0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  padding: 36px 40px 60px;
+  min-width: 1400px;
+}
+
+/* ── Header ── */
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.header h1 {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 6px;
+}
+.header p {
+  color: #475569;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 3px;
+}
+
+/* ── Main canvas ── */
+.canvas { max-width: 1360px; margin: 0 auto; }
+
+/* ── Zone ── */
+.zone {
+  border: 1.5px solid;
+  border-radius: 14px;
+  padding: 20px 20px 16px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.zone-title {
+  position: absolute;
+  top: -11px; left: 18px;
+  background: #0b0d14;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.zone-n8n   { border-color: #4c1d95; }
+.zone-n8n .zone-title { color: #a78bfa; }
+
+/* ── Workflow block ── */
+.wf {
+  background: #10121e;
+  border: 1px solid #1e2035;
+  border-radius: 10px;
+  padding: 12px 16px 14px;
+  margin-bottom: 12px;
+}
+.wf:last-child { margin-bottom: 0; }
+.wf-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wf-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 800;
+  background: #1e1b4b;
+  color: #a78bfa;
+  flex-shrink: 0;
+}
+.wf-row { display: flex; gap: 12px; }
+.wf-row .wf { flex: 1; margin-bottom: 0; }
+
+/* ── Pipeline ── */
+.pipe {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  row-gap: 7px;
+  margin-bottom: 7px;
+}
+.pipe:last-child { margin-bottom: 0; }
+
+/* ── Nodes ── */
+.n {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.35;
+  gap: 1px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.n sub { font-size: 8.5px; font-weight: 400; opacity: 0.75; display: block; }
+
+/* node variants */
+.n-trig  { background: #451a03; border: 1px solid #d97706; color: #fbbf24; }
+.n-drive { background: #172554; border: 1px solid #3b82f6; color: #93c5fd; }
+.n-sheet { background: #052e16; border: 1px solid #16a34a; color: #86efac; }
+.n-gmail { background: #1c1917; border: 1px solid #ef4444; color: #fca5a5; }
+.n-code  { background: #1e1b4b; border: 1px solid #6366f1; color: #a5b4fc; }
+.n-gem   { background: #2e1065; border: 1px solid #9333ea; color: #d8b4fe; }
+.n-api   { background: #022c22; border: 1px solid #059669; color: #34d399; }
+.n-oai   { background: #1c1c24; border: 1px solid #52525b; color: #d1d5db; }
+.n-pine  { background: #032717; border: 1px solid #10b981; color: #6ee7b7; }
+.n-hook  { background: #0c1a2e; border: 1px solid #0ea5e9; color: #7dd3fc; }
+.n-merge { background: #111827; border: 1px solid #374151; color: #9ca3af; }
+.n-if    { background: #1c1f2e; border: 1px solid #4b5563; color: #9ca3af; font-style: italic; }
+
+/* ── Arrow ── */
+.arr { color: #334155; font-size: 15px; flex-shrink: 0; user-select: none; }
+.arr-sm { color: #334155; font-size: 11px; flex-shrink: 0; }
+
+/* ── Fork (branch) ── */
+.fork {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.fork-label { font-size: 8px; color: #475569; }
+
+/* ── Parallel box ── */
+.par {
+  border: 1px dashed #2d3748;
+  border-radius: 8px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.par-label { font-size: 8px; color: #475569; margin-bottom: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+/* ── Services row ── */
+.svc-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 14px;
+}
+.svc {
+  border: 1.5px solid;
+  border-radius: 12px;
+  padding: 16px 18px;
+  position: relative;
+}
+.svc-title {
+  position: absolute;
+  top: -10px; left: 14px;
+  background: #0b0d14;
+  padding: 0 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.svc-fastapi   { border-color: #065f46; flex: 0 0 290px; }
+.svc-fastapi .svc-title { color: #34d399; }
+.svc-dash      { border-color: #0c4a6e; flex: 0 0 320px; }
+.svc-dash .svc-title { color: #38bdf8; }
+.svc-ext       { border-color: #1e293b; flex: 1; }
+.svc-ext .svc-title { color: #64748b; }
+
+/* ── Endpoint list ── */
+.ep-list { list-style: none; font-size: 11px; color: #94a3b8; line-height: 2; }
+.ep-list li::before { content: '╴'; color: #374151; }
+.badge-get  { background: #052e16; color: #34d399; font-size: 8.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-right: 5px; }
+.badge-post { background: #431407; color: #fb923c; font-size: 8.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-right: 5px; }
+
+/* ── Dashboard details ── */
+.dash-list { list-style: none; font-size: 11px; color: #94a3b8; line-height: 2; }
+.dash-list li::before { content: '→ '; color: #0ea5e9; }
+
+/* ── External services grid ── */
+.ext-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ext-card {
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 9px 11px;
+}
+.ext-card-name { font-size: 11px; font-weight: 700; margin-bottom: 3px; }
+.ext-card-detail { font-size: 9.5px; color: #475569; line-height: 1.6; }
+
+/* ── Footer ── */
+.footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 10.5px;
+  color: #334155;
+  border-top: 1px solid #161b26;
+  padding-top: 16px;
+}
+.footer code { color: #475569; }
+
+/* ── Connection hints ── */
+.conn-hint {
+  font-size: 9px;
+  color: #334155;
+  font-style: italic;
+  margin-left: 6px;
+}
+
+.pipe-section {
+  border-left: 2px solid #1e2035;
+  padding-left: 12px;
+  margin-left: 4px;
+  margin-bottom: 7px;
+}
+.pipe-section:last-child { margin-bottom: 0; }
+.pipe-section-label {
+  font-size: 9px;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 5px;
+}
+
+.note {
+  font-size: 9.5px;
+  color: #475569;
+  margin-top: 6px;
+  padding: 5px 8px;
+  background: #0f1218;
+  border-radius: 5px;
+  border-left: 2px solid #1e293b;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Prismatic — System Architecture</h1>
+  <p>Document Intelligence Pipeline · n8n + FastAPI + Dashboard · 5 Workflows · 9 Domain Scenarios</p>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>Trigger</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div>Code / Logic</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#9333ea"></div>Gemini AI</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#52525b"></div>OpenAI</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Google Drive</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Google Sheets</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Gmail</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#059669"></div>FastAPI</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#0ea5e9"></div>Webhook / Dashboard</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>Pinecone</div>
+</div>
+
+<div class="canvas">
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- n8n ZONE                                                    -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="zone zone-n8n">
+    <div class="zone-title">n8n Workflow Engine &nbsp;·&nbsp; :5678</div>
+
+    <!-- ① CONTROLLER -->
+    <div class="wf">
+      <div class="wf-title">
+        <div class="wf-badge">1</div>
+        <span style="color:#a78bfa">Prismatic Controller</span>
+        <span style="color:#334155;font-weight:400;font-size:9px">— Entry point · receives every file upload · dispatches to sub-workflows</span>
+      </div>
+
+      <div class="pipe">
+        <div class="n n-trig">📁 Google Drive<sub>new file trigger<br>prismatic-input/</sub></div>
+        <div class="arr">→</div>
+        <div class="n n-drive">⬇ Download File<sub>Google Drive API</sub></div>
+        <div class="arr">→</div>
+        <div class="n n-if">IF<sub>mimeType = .zip?</sub></div>
+        <div class="arr">→</div>
+        <div class="fork">
+          <div class="pipe">
+            <span class="fork-label">yes →</span>
+            <div class="n n-code">🗜 Unzip File<sub>Python · N items<br>_fileBase64 + _sourceZip</sub></div>
+          </div>
+          <div class="pipe">
+            <span class="fork-label">no &nbsp;→</span>
+            <div class="n n-code">📄 Extract from File<sub>N items<br>base64 encode</sub></div>
+          </div>
+        </div>
+        <div class="arr">→</div>
+        <div class="n n-code">🏷 Tag Items<sub>_total + _idx<br>both paths merge here</sub></div>
+        <div class="arr">→</div>
+        <div class="n n-code">🔄 Loop Over Items<sub>1 file / iteration<br>1-min gap between</sub></div>
+        <div class="arr">→</div>
+        <div class="par">
+          <div class="par-label">parallel calls</div>
+          <div class="n n-code" style="margin-bottom:4px">⚡ Call File Analyze<sub>executeWorkflow ②</sub></div>
+          <div class="n n-pine">⚡ Call Rag Ingestion<sub>executeWorkflow ⑤</sub></div>
+        </div>
+      </div>
+      <div class="note">Both ZIP archives and single files converge at Tag Items → Loop. Every file — whether from a ZIP or a direct upload — is tagged, throttled, and processed one at a time with a 1-minute gap. ZIP files also carry a _sourceZip field for traceability.</div>
+    </div>
+
+    <!-- ② FILE ANALYZE -->
+    <div class="wf">
+      <div class="wf-title">
+        <div class="wf-badge">2</div>
+        <span style="color:#a78bfa">Prismatic File Analyze</span>
+        <span style="color:#334155;font-weight:400;font-size:9px">— Core pipeline · called per file · parse → classify → analyze → enrich → store → notify</span>
+      </div>
+
+      <!-- Stage A: Parse -->
+      <div class="pipe-section">
+        <div class="pipe-section-label">A · Parse</div>
+        <div class="pipe">
+          <div class="n n-code">▶ Start<sub>executeWorkflow trigger</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-code">🔑 Set Gemini Key<sub>inject from $env</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-code">📝 Parser<sub>PDF · DOCX · TXT<br>pdfplumber / python-docx</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-gem" style="font-size:9px">👁 Vision (opt.)<sub>Gemini describes images<br>USE_VISION=True</sub></div>
+        </div>
+      </div>
+
+      <!-- Stage B: Classify -->
+      <div class="pipe-section">
+        <div class="pipe-section-label">B · Scenario Classification</div>
+        <div class="pipe">
+          <div class="n n-gem">🎯 Detect Scenario<sub>build classify prompt</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-gem">⚡ Gemini Flash<sub>gemini-2.5-flash<br>classify</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-code">📤 Extract Scenario<sub>detected_scenario<br>+ reasoning</sub></div>
+        </div>
+      </div>
+
+      <!-- Stage C: Analyze -->
+      <div class="pipe-section">
+        <div class="pipe-section-label">C · Domain Analysis (Flash + Pro in parallel)</div>
+        <div class="pipe">
+          <div class="n n-gem">🔨 Build Prompt<sub>domain-specific<br>9 scenarios</sub></div>
+          <div class="arr">→</div>
+          <div class="par">
+            <div class="par-label">parallel analysis</div>
+            <div class="n n-gem" style="margin-bottom:4px">⚡ Gemini Flash<sub>summary · entities<br>sentiment · actions</sub></div>
+            <div class="n n-gem">⚡ Gemini Pro<sub>higher quality<br>fallback</sub></div>
+          </div>
+          <div class="arr">→</div>
+          <div class="par">
+            <div class="par-label">parse each</div>
+            <div class="n n-code" style="margin-bottom:4px">📤 Parse Flash<sub>validate JSON</sub></div>
+            <div class="n n-code">📤 Parse Pro<sub>validate JSON</sub></div>
+          </div>
+          <div class="arr">→</div>
+          <div class="n n-merge">⊕ Merge<sub>Flash + Pro</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-code">🔀 Diff Models<sub>compare + capture<br>file metadata</sub></div>
+        </div>
+      </div>
+
+      <!-- Stage D: Enrich -->
+      <div class="pipe-section">
+        <div class="pipe-section-label">D · Enrichment (FastAPI in parallel)</div>
+        <div class="pipe">
+          <div class="par">
+            <div class="par-label">parallel → :8000</div>
+            <div class="n n-api" style="margin-bottom:4px">🔧 POST /enrich<sub>dept routing<br>UUID · confidence</sub></div>
+            <div class="n n-api">🔒 POST /sensitivity<sub>public · internal<br>confidential + LLM verify</sub></div>
+          </div>
+          <div class="arr">→</div>
+          <div class="n n-merge">⊕ Merge<sub>both results</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-code">🧩 Merge Results<sub>assemble final<br>enriched record</sub></div>
+        </div>
+      </div>
+
+      <!-- Stage E: Store -->
+      <div class="pipe-section">
+        <div class="pipe-section-label">E · Store</div>
+        <div class="pipe">
+          <div class="n n-sheet">📊 Append Row<sub>Google Sheets<br>full result record</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-code">📋 Generate Report<sub>JSON + MD formats</sub></div>
+          <div class="arr">→</div>
+          <div class="par">
+            <div class="par-label">parallel uploads</div>
+            <div class="n n-drive" style="margin-bottom:4px">☁ Upload JSON<sub>Google Drive</sub></div>
+            <div class="n n-drive">☁ Upload MD<sub>Google Drive</sub></div>
+          </div>
+          <div class="arr">→</div>
+          <div class="n n-pine">⚡ Call Rag Ingestion<sub>vectorize report<br>for semantic search</sub></div>
+        </div>
+      </div>
+
+      <!-- Stage F: Notify -->
+      <div class="pipe-section">
+        <div class="pipe-section-label">F · Notify</div>
+        <div class="pipe">
+          <div class="n n-code">✉ Build Email HTML<sub>summary + entities<br>source_zip if ZIP</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-gmail">📧 Send Email<sub>Gmail · NOTIFY_EMAIL</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-if">IF<sub>confidential?</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-code">🚨 Build Alert HTML<sub>urgent template</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-gmail">🚨 Urgent Alert<sub>Gmail priority</sub></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ DAILY DIGEST   ④ RAG CHATBOT -->
+    <div class="wf-row">
+
+      <div class="wf">
+        <div class="wf-title">
+          <div class="wf-badge">3</div>
+          <span style="color:#a78bfa">Daily Digest</span>
+          <span style="color:#334155;font-weight:400;font-size:9px">— Scheduled summary email</span>
+        </div>
+        <div class="pipe">
+          <div class="n n-trig">⏰ Schedule<sub>daily cron trigger</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-sheet">📊 Read Sheets<sub>all result rows</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-code">🔍 Filter<sub>today's docs</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-code">✉ Build Digest<sub>HTML body</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-gmail">📧 Send Digest<sub>Gmail</sub></div>
+        </div>
+      </div>
+
+      <div class="wf">
+        <div class="wf-title">
+          <div class="wf-badge">4</div>
+          <span style="color:#a78bfa">RAG Chatbot</span>
+          <span style="color:#334155;font-weight:400;font-size:9px">— Semantic Q&amp;A over processed documents</span>
+        </div>
+        <div class="pipe">
+          <div class="n n-hook">🌐 Chat Webhook<sub>POST from dashboard<br>DASHBOARD_WEBHOOK_URL</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-gem">🤖 RAG AI Agent<sub>Gemini + OpenAI<br>+ Simple Memory</sub></div>
+          <div class="arr">→</div>
+          <div class="n n-hook">↩ Respond<sub>structured JSON output<br>to dashboard</sub></div>
+        </div>
+        <div class="note" style="margin-top:7px">
+          Agent tools:
+          <span style="color:#6ee7b7">Pinecone vector search</span> &nbsp;·&nbsp;
+          <span style="color:#d1d5db">OpenAI text-embedding</span> &nbsp;·&nbsp;
+          <span style="color:#d8b4fe">Gemini Chat Model</span> &nbsp;·&nbsp;
+          <span style="color:#9ca3af">Structured Output Parser</span> &nbsp;·&nbsp;
+          <span style="color:#94a3b8">Buffer Memory (session)</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ⑤ RAG INGESTION -->
+    <div class="wf">
+      <div class="wf-title">
+        <div class="wf-badge">5</div>
+        <span style="color:#a78bfa">Rag Ingestion</span>
+        <span style="color:#334155;font-weight:400;font-size:9px">— Called by ① Controller and ② File Analyze · embeds document into Pinecone</span>
+      </div>
+      <div class="pipe">
+        <div class="n n-code">▶ Start<sub>executeWorkflow trigger</sub></div>
+        <div class="arr">→</div>
+        <div class="n n-if">IF<sub>data type?</sub></div>
+        <div class="arr">→</div>
+        <div class="n n-code">📄 Convert to File<sub>binary conversion</sub></div>
+        <div class="arr">→</div>
+        <div class="n n-oai">✂ Text Splitter<sub>Recursive Char<br>chunk + overlap</sub></div>
+        <div class="arr">→</div>
+        <div class="n n-oai">📦 Data Loader<sub>Default Loader<br>metadata attach</sub></div>
+        <div class="arr">→</div>
+        <div class="n n-oai">🔢 Embed OpenAI<sub>text-embedding-*<br>vectorize</sub></div>
+        <div class="arr">→</div>
+        <div class="n n-pine">🌲 Pinecone<sub>upsert vectors<br>namespace: docs</sub></div>
+      </div>
+    </div>
+
+  </div><!-- /zone-n8n -->
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SERVICES ROW                                                -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="svc-row">
+
+    <!-- FastAPI -->
+    <div class="svc svc-fastapi">
+      <div class="svc-title">FastAPI Microservice &nbsp;·&nbsp; :8000</div>
+      <ul class="ep-list">
+        <li><span class="badge-get">GET</span>/health &nbsp;— liveness probe</li>
+        <li><span class="badge-get">GET</span>/categories &nbsp;— list 9 scenarios</li>
+        <li><span class="badge-get">GET</span>/results &nbsp;— recent records</li>
+        <li><span class="badge-post">POST</span>/enrich &nbsp;— dept · UUID · confidence</li>
+        <li><span class="badge-post">POST</span>/sensitivity &nbsp;— rule-based + LLM verify</li>
+      </ul>
+      <div style="margin-top:10px;font-size:9.5px;color:#374151;border-top:1px solid #0d1f14;padding-top:8px;line-height:1.7">
+        <span style="color:#6ee7b7">scenarios.toml</span> — 9 domain configs (keywords, dept maps)<br>
+        <span style="color:#6ee7b7">sensitivity.py</span> — keyword regex → OpenAI gpt-4o-mini verify<br>
+        <span style="color:#6ee7b7">enrichment.py</span> — route to dept, assign UUID, adjust score<br>
+        Starts before n8n via <code style="color:#4ade80">depends_on: service_healthy</code>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="svc svc-dash">
+      <div class="svc-title">Dashboard &nbsp;·&nbsp; :3000 (nginx)</div>
+      <ul class="dash-list">
+        <li>Live intelligence feed from Google Sheets</li>
+        <li>Semantic chat via RAG Chatbot webhook</li>
+        <li>Document counts, sensitivity breakdown</li>
+        <li>Config: <code style="color:#7dd3fc;font-size:9.5px">dashboard/config.js</code></li>
+      </ul>
+      <div style="margin-top:10px;font-size:9.5px;color:#374151;border-top:1px solid #0c2a3a;padding-top:8px;line-height:1.7">
+        Env: <code style="color:#38bdf8">GOOGLE_SHEET_ID</code> &nbsp;·&nbsp;
+             <code style="color:#38bdf8">GOOGLE_SHEETS_API_KEY</code><br>
+             <code style="color:#38bdf8">DASHBOARD_WEBHOOK_URL</code> (n8n RAG webhook)
+      </div>
+    </div>
+
+    <!-- External Services -->
+    <div class="svc svc-ext">
+      <div class="svc-title">External Services</div>
+      <div class="ext-grid">
+
+        <div class="ext-card" style="border-color:#4c1d95">
+          <div class="ext-card-name" style="color:#d8b4fe">⚡ Gemini API</div>
+          <div class="ext-card-detail">
+            gemini-2.5-flash — classify + analyze<br>
+            gemini-pro — parallel analysis / fallback<br>
+            gemini-vision — image description (opt.)
+          </div>
+        </div>
+
+        <div class="ext-card" style="border-color:#27272a">
+          <div class="ext-card-name" style="color:#d1d5db">🤖 OpenAI</div>
+          <div class="ext-card-detail">
+            gpt-4o-mini — sensitivity LLM verify<br>
+            text-embedding-* — RAG vectorization<br>
+            Chat model — RAG agent reasoning
+          </div>
+        </div>
+
+        <div class="ext-card" style="border-color:#064e3b">
+          <div class="ext-card-name" style="color:#6ee7b7">🌲 Pinecone</div>
+          <div class="ext-card-detail">
+            Vector store for all processed docs<br>
+            Semantic search by RAG Chatbot<br>
+            Upserted after every file analysis
+          </div>
+        </div>
+
+        <div class="ext-card" style="border-color:#1e3a5f">
+          <div class="ext-card-name" style="color:#93c5fd">☁ Google Drive</div>
+          <div class="ext-card-detail">
+            <em>prismatic-input/</em> — upload trigger<br>
+            Stores JSON + MD report files<br>
+            OAuth2 credentials in n8n
+          </div>
+        </div>
+
+        <div class="ext-card" style="border-color:#14532d">
+          <div class="ext-card-name" style="color:#86efac">📊 Google Sheets</div>
+          <div class="ext-card-detail">
+            All enriched results appended per file<br>
+            Source for Daily Digest filter<br>
+            Dashboard reads via Sheets API key
+          </div>
+        </div>
+
+        <div class="ext-card" style="border-color:#7f1d1d">
+          <div class="ext-card-name" style="color:#fca5a5">📧 Gmail</div>
+          <div class="ext-card-detail">
+            Summary email per document<br>
+            Confidential alert (urgent priority)<br>
+            Daily digest (scheduled, batched)
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /svc-row -->
+
+  <!-- Footer -->
+  <div class="footer">
+    <strong>Docker Compose:</strong>
+    <code>docker compose -f n8n-setup/docker-compose.yml --env-file .env up -d</code>
+    &nbsp;·&nbsp; n8n <strong>:5678</strong>
+    &nbsp;·&nbsp; FastAPI <strong>:8000</strong>
+    &nbsp;·&nbsp; Dashboard <strong>:3000</strong>
+    &nbsp;·&nbsp; Runners (internal)
+    &nbsp;·&nbsp; Pinecone (cloud)
+    <br><br>
+    Workflow files: <code>n8n-workflows/*.json</code>
+    &nbsp;·&nbsp; Code blocks: <code>n8n_code_blocks/</code>
+    &nbsp;·&nbsp; API source: <code>api/</code>
+    &nbsp;·&nbsp; Dashboard: <code>dashboard/</code>
+  </div>
+
+</div><!-- /canvas -->
+</body>
+</html>

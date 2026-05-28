@@ -11,15 +11,24 @@ An n8n-based document intelligence pipeline. Uploads from Google Drive are parse
 Google Drive (new file trigger — prismatic-input folder)
         │
         ▼
-  Prismatic Controller
-        ├─ IF .zip → Unzip (Python) → N items, each with _fileBase64 + _fileName
-        └─ IF other → Convert to Base64 → 1 item with _fileBase64 + _fileName
-        │
-        │  Tag Items: adds _total + _idx (for loop-aware throttling)
+  Download file
         │
         ▼
-  Loop: feed one file at a time to Prismatic File Analyze
-        (1-minute gap between files — no concurrent downstream calls)
+  IF: is .zip?
+        │
+        ├─ true  → Unzip (Python) → N items with _fileBase64 + _fileName
+        │
+        └─ false → Extract from File → N items with _fileBase64
+        │
+        ▼ (both paths converge here)
+  Tag Items — adds _total + _idx to every item
+        │
+        ▼
+  Loop Over Items (SplitInBatches, size=1)
+        │  1-minute gap between files
+        ├──────────────────────────────────────────┐
+        ▼                                          ▼
+  Call Prismatic-File-Analyze              Call Rag Ingestion
         │
         ▼
   Prismatic File Analyze (called per file via Execute Workflow)
@@ -84,6 +93,8 @@ Google Drive (new file trigger — prismatic-input folder)
 ### ZIP file handling
 
 Upload a `.zip` file to the `prismatic-input` folder and the Controller automatically unpacks it. Each file inside is treated as an independent document — parsed, classified, and analyzed separately with a 1-minute gap between each to avoid rate limits.
+
+Both ZIPs and single files converge into the same `Tag Items → Loop Over Items` path. This means even a bulk upload of individual files is handled uniformly — each file is tagged, throttled, and processed one at a time with a 1-minute gap.
 
 Every extracted file carries a `_sourceZip` field (`{id, name}`) that traces it back to its archive. This appears in:
 - The Google Sheets `source_zip` column
