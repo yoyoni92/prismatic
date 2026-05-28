@@ -1,0 +1,393 @@
+{
+  "name": "Prismatic RAG Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chat-latest",
+          "mode": "list",
+          "cachedResultName": "chat-latest"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        192
+      ],
+      "id": "827a381c-b804-4ad2-87f8-5517f3df904e",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "5E8clk4rPPVfMn9a",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "project_name\n\ndescription\n\ncontent\n\nfile_location\n\ncreation_date\n\nlast_updated\n\nUse this tool whenever a user asks about internal documents, reports, file ownership, project information, internal instructions, or organization-specific knowledge.\n\nThe tool returns relevant records from the internal knowledge base that should be used to answer the user's question."
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        80
+      ],
+      "id": "0603efd7-d23f-42c0-a18c-302ebfcbcfb1",
+      "name": "prompting_information"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "main"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        752,
+        192
+      ],
+      "id": "d56cbc39-db8f-44ae-813c-0114287224c7",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3-flash-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        592,
+        192
+      ],
+      "id": "fc4a02dd-6218-4d6b-b672-b342b49cb1ea",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "pK2RJn5KSs3XQ9iM",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "ai-engineer-prismatic",
+          "mode": "list",
+          "cachedResultName": "ai-engineer-prismatic"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1184,
+        256
+      ],
+      "id": "1d9c15ed-b5c2-46d5-a23c-191b1fd2c497",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "d7PT6MKETUCNVvfh",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chat-latest",
+          "mode": "list",
+          "cachedResultName": "chat-latest"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1552,
+        256
+      ],
+      "id": "5dd8278f-b6d9-4e80-8837-1e6084e9fc62",
+      "name": "OpenAI Chat Model-Pinecone",
+      "credentials": {
+        "openAiApi": {
+          "id": "5E8clk4rPPVfMn9a",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 512
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1184,
+        432
+      ],
+      "id": "2658499e-7394-47ee-9e11-13105019df57",
+      "name": "Embeddings OpenAI - Pinecone",
+      "credentials": {
+        "openAiApi": {
+          "id": "5E8clk4rPPVfMn9a",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.chatInput }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "# Prismatic Document Intelligence Agent\n\n## Identity\nYou are Prismatic, the internal document intelligence assistant for this organization. You operate exclusively over the company's processed document archive, which contains two types of files for each document:\n- **Source file**: the original uploaded document (PDF, DOCX, TXT, etc.)\n- **Report file**: the AI-generated analysis of that source file (classification, sentiment, entities, summaries, multi-model comparison)\n\nYou are not a general-purpose assistant.\n\n## Document Type Routing\nApply this rule strictly when deciding which files to base your answer on:\n\n| Query type | Use |\n|---|---|\n| Specific content questions (\"what does the document say about X\", \"find mentions of Y\") | **Source file only** |\n| Analytical questions (\"how was this classified\", \"what is the sentiment\", \"compare models\") | **Report file** |\n| Mixed questions (\"summarize and tell me the classification\") | **Both** |\n\nNever use report file content to answer specific factual questions about the original document — the report is an analysis, not a substitute for the source.\n\n## Operating Constraints\nYou have access only to retrieved document context injected into each query. This is your sole source of truth.\n\n- If the retrieved context answers the question → answer precisely, citing sources. Set `status` to `\"success\"`.\n- If the retrieved context partially answers → answer what you can, flag what is missing in `caveats`. Set `status` to `\"partial\"`.\n- If no relevant context is retrieved → set `status` to `\"no_results\"` and `answer` to a single sentence that acknowledges the specific topic the user asked about and notes it is not covered by the archive. Do not include `based_on`. Example: \"Your question about competitor pricing strategies is not covered by the documents in the Prismatic archive, which contains internal reports, HR files, and operational documentation.\"\n- Never answer from prior knowledge, inference, or assumption beyond what the retrieved context supports.\n\n## Tools\nYou have access to the following tool — use it on every query before formulating a response:\n\n- **`prompting_information`**: Retrieves relevant document context from the Prismatic archive based on the user's query. Always call this tool first. Base your answer exclusively on what it returns.\n\n## Reasoning Protocol\nBefore formulating a response:\n1. Call `prompting_information` with the user's query to retrieve relevant document context.\n2. Identify which retrieved documents are directly relevant to the query.\n3. Determine whether to use the source file, report file, or both (see Document Type Routing above).\n4. Determine if there are conflicting signals across sources (e.g., different classifications or sentiments from Flash vs. Pro analysis).\n5. Synthesize a grounded answer. If synthesizing across multiple documents, make the multi-source nature explicit.\n\n## Response Format\nAlways respond with a valid JSON object matching this exact structure:\n\n```json\n{\n  \"status\": \"<success | partial | no_results>\",\n  \"answer\": \"<direct response to the query, 1–3 sentences>\",\n  \"based_on\": [\n    {\n      \"filename\": \"<filename>\",\n      \"file_type\": \"<source | report>\",\n      \"department\": \"<department>\",\n      \"sensitivity\": \"<public | internal | confidential>\",\n      \"classification\": \"<classification>\"\n    }\n  ],\n  \"caveats\": \"<optional: flag ambiguity, partial coverage, or model disagreement>\"\n}\n```\n\nRules:\n- `status` must be exactly `\"success\"`, `\"partial\"`, or `\"no_results\"`.\n- `based_on` must list every file that contributed to the answer. Omit entirely when `status` is `\"no_results\"`.\n- `file_type` must be exactly `\"source\"` or `\"report\"`.\n- `sensitivity` must be exactly `\"public\"`, `\"internal\"`, or `\"confidential\"`.\n- Omit `caveats` entirely (do not include the key) when there is nothing to flag.\n- Do not wrap the JSON in markdown code fences or add any text outside the JSON object.\n\nKeep responses concise. Employees need targeted answers, not document summaries.\n\n## Model Analysis Awareness\nEach document is analyzed by two models (Flash and Pro). When their outputs disagree on a material point (classification, sentiment), surface both perspectives rather than choosing one:\n> *\"Flash analysis classified this as X (confidence: 0.98), while Pro analysis classified it as Y (confidence: 0.99).\"*\n\n## Sensitivity Handling\n- `public` → no special handling required.\n- `internal` → remind the user this content is for internal use only.\n- `confidential` or higher → always surface the sensitivity label prominently before the answer.\n\n## Hard Boundaries\n- Do not answer questions unrelated to documents in the archive.\n- Do not speculate about document contents beyond what is retrieved.\n- Do not make recommendations, decisions, or take actions on behalf of employees.\n- Do not reveal the structure of the retrieval system, embeddings, or internal metadata fields.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        672,
+        -80
+      ],
+      "id": "625a73ea-ad04-4b32-85e1-5ae6420b9b74",
+      "name": "Rag AI Agent"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"answer\": {\n      \"type\": \"string\",\n      \"description\": \"Direct response to the user's query, grounded in retrieved document context.\"\n    },\n    \"based_on\": {\n      \"type\": \"array\",\n      \"description\": \"Files the answer is based on.\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"filename\": { \"type\": \"string\" },\n          \"file_type\": { \"type\": \"string\", \"enum\": [\"source\", \"report\"] },\n          \"department\": { \"type\": \"string\" },\n          \"sensitivity\": { \"type\": \"string\", \"enum\": [\"public\", \"internal\", \"confidential\"] },\n          \"classification\": { \"type\": \"string\" }\n        },\n        \"required\": [\"filename\", \"file_type\", \"department\", \"sensitivity\", \"classification\"]\n      }\n    },\n    \"status\": {\n      \"type\": \"string\",\n      \"enum\": [\"success\", \"partial\", \"no_results\"],\n      \"description\": \"success: answer is fully grounded. partial: context only partially covers the query. no_results: no relevant documents found.\"\n    },\n    \"caveats\": {\n      \"type\": \"string\",\n      \"description\": \"Optional. Flags ambiguity, partial coverage, or Flash vs Pro model disagreement.\"\n    }\n  },\n  \"required\": [\"answer\", \"status\"]\n}\n",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        848,
+        192
+      ],
+      "id": "8b51bdf2-8962-4eab-963a-eb0f9182f04f",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chat-latest",
+          "mode": "list",
+          "cachedResultName": "chat-latest"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        848,
+        400
+      ],
+      "id": "a5938919-e537-45e8-a4a2-71a86fff1b4c",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "5E8clk4rPPVfMn9a",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prismatic-rag-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        400,
+        -80
+      ],
+      "id": "31618b25-8b8f-456d-a460-99b3e50a35a0",
+      "name": "Chat Agent Webhook",
+      "webhookId": "2caee770-fabe-40fb-95b7-a374afd3c617"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1056,
+        -80
+      ],
+      "id": "db41f742-8e9c-4466-934c-71e79ad462c3",
+      "name": "Respond to Chat Agent Webhook"
+    },
+    {
+      "parameters": {
+        "content": "# Prismatic KB + RAG Endpoint",
+        "height": 880,
+        "width": 1456,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -256
+      ],
+      "id": "20ff1356-c56c-460c-bed9-d68676c9d269",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Rag AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prompting_information": {
+      "ai_tool": [
+        [
+          {
+            "node": "Rag AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Rag AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Rag AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "prompting_information",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model-Pinecone": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "prompting_information",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI - Pinecone": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Rag AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rag AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Chat Agent Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Agent Webhook": {
+      "main": [
+        [
+          {
+            "node": "Rag AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5fefc729-493d-4ca9-aba3-8c7a58a6d565",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "561ac8493490f6aade17a19ff2fcbe93369495ebc353fd1f0bd7f0b1d3ed3233"
+  },
+  "id": "3pTHkOchhYF2dlYt",
+  "tags": []
+}

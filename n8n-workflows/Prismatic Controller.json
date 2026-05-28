@@ -1,0 +1,410 @@
+{
+  "name": "Prismatic Controller",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1QMpw_rsA9kNYoSzfVxGyMpO4_A9GdsCt",
+          "mode": "list",
+          "cachedResultName": "prismatic-input",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1QMpw_rsA9kNYoSzfVxGyMpO4_A9GdsCt"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        128
+      ],
+      "id": "8e737b11-d94e-4439-b91e-db697d7f9ceb",
+      "name": "Google Drive Folder Event Listener",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "9zdcWyuzaglQXcZw",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        752,
+        -96
+      ],
+      "id": "28710ad6-1c35-46da-8ef3-8c4851536ae5",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "content": "# Prismatic Controller \n1. Handle and view changed Files\n2. Handle Zip File If input\n3. Download the file\n4. Trigger Rag Ingestion\n5. Trigger Analyze",
+        "height": 688,
+        "width": 2068,
+        "color": "#142326"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        -176
+      ],
+      "id": "8f36c87b-a33c-404c-8d3f-d895c0188ce5",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4ad5dca7-037f-40f0-bf43-3794d9a6f65b",
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "application/zip",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -128,
+        128
+      ],
+      "id": "e7d1cfd7-dc45-44d5-b937-2ec3c746a4d0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "qaMuDabBTTnNqlEQ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/qaMuDabBTTnNqlEQ",
+          "cachedResultName": "Rag Ingestion"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1072,
+        -80
+      ],
+      "name": "Call Rag Ingestion",
+      "id": "6e0e03ac-1b2b-4f3e-bea1-a466ad2e6197"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -368,
+        128
+      ],
+      "id": "4a18f5f5-725a-4d9e-887a-21f261cd8b1d",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "9zdcWyuzaglQXcZw",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "import zipfile\nimport base64\nimport io\n\nitems_out = []\n\nfor item in _items:\n    json_data = item.get('json', {})\n    raw_b64 = item.get('binary', {}).get('data', {}).get('data', '')\n    zip_bytes = base64.b64decode(raw_b64)\n\n    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:\n        for name in zf.namelist():\n            # skip directories and macOS metadata\n            if name.endswith('/') or name.startswith('__MACOSX') or name.startswith('.'):\n                continue\n\n            file_bytes = zf.read(name)\n            short_name = name.split('/')[-1]\n            ext = short_name.rsplit('.', 1)[-1].lower() if '.' in short_name else ''\n            mime_map = {\n                'pdf':  'application/pdf',\n                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',\n                'txt':  'text/plain',\n                'md':   'text/markdown',\n            }\n            mime_type = mime_map.get(ext, 'application/octet-stream')\n            items_out.append({\n                'json': {\n                    'id': None,\n                    'name': short_name,\n                    'mimeType': mime_type,\n                    'fileExtension': ext,\n                    '_fileBase64': base64.b64encode(file_bytes).decode('utf-8'),\n                    '_fileName': short_name,\n                    '_sourceZip': {\n                        'id':   json_data.get('id'),\n                        'name': json_data.get('name'),\n                    },\n                }\n            })\n\nreturn items_out\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        -96
+      ],
+      "id": "ba633d3e-2795-487b-bb3c-3ab416a7999d",
+      "name": "Unzip File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst total = items.length;\nreturn items.map((item, idx) => ({\n  json: { ...item.json, _total: total, _idx: idx }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        -96
+      ],
+      "id": "35f3f4ad-4e94-4f0d-94b6-ce41971d3313",
+      "name": "Tag Items"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Hv5AMglgKhMymRR7",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Hv5AMglgKhMymRR7",
+          "cachedResultName": "Prismatic-File-Analyze"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1088,
+        144
+      ],
+      "name": "Call Prismatic-File-Analyze1",
+      "id": "bb9b15b5-e59a-4ba7-9f10-a395c6a461cc"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1knZCC28LI5lP0WfIjNmoLg6xgHMaf9OUlIzE-owtn-Y",
+          "mode": "list",
+          "cachedResultName": "test-multi",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1knZCC28LI5lP0WfIjNmoLg6xgHMaf9OUlIzE-owtn-Y/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "גיליון1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1knZCC28LI5lP0WfIjNmoLg6xgHMaf9OUlIzE-owtn-Y/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Filename"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -368,
+        -336
+      ],
+      "id": "f4bd0748-2394-43a9-b4e1-da126c65415f",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aPKG6gWFxIGbnITA",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "=data",
+        "destinationKey": "_fileBase64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        144
+      ],
+      "id": "7ab306dd-d168-4136-b24e-7d6cf2bf6a11",
+      "name": "Extract from File"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Call Rag Ingestion",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Prismatic-File-Analyze1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Folder Event Listener": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Unzip File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unzip File": {
+      "main": [
+        [
+          {
+            "node": "Tag Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag Items": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Call Rag Ingestion",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Prismatic-File-Analyze1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Prismatic-File-Analyze1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Rag Ingestion": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "375610a6-2084-4b18-9cb2-55d564c39614",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "561ac8493490f6aade17a19ff2fcbe93369495ebc353fd1f0bd7f0b1d3ed3233"
+  },
+  "id": "nlS1B3PByZiMCw8z",
+  "tags": []
+}
